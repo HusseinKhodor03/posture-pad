@@ -1,0 +1,17 @@
+# KiCad local artifacts
+*.kicad_prl
+*.kicad_sch-bak
+*.kicad_pcb-bak
+*-backups/
+fp-info-cache
+
+# Generated fabrication outputs
+*.gbr
+*.drl
+*.zip
+*.pdf
+*.svg
+
+# Exported BOM files
+*.xml
+*.csv

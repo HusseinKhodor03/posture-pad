@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Posture Pad Heatmap</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="mainContainer">
+      <div id="container">
+        <div class="foot" id="leftFootContainer"></div>
+        <div class="foot" id="rightFootContainer"></div>
+      </div>
+
+      <div id="statsContainer">
+        <div class="box" id="postureSummary">
+          <h3>Posture Summary</h2>
+          <div id="postureState"></div>
+          <div id="balance"></div>
+          <div id="stability"></div>
+          <div id="suggestion"></div>
+        </div>
+
+        <div id="footMetricsContainer">
+          <div class="box" id="leftFootMetrics">
+            <h3>Left Foot Metrics</h2>
+            <div id="leftTotal"></div>
+            <div id="leftCopX"></div>
+            <div id="leftCopY"></div>
+            <div id="leftForefoot"></div>
+            <div id="leftRearfoot"></div>
+            <div id="leftMedial"></div>
+            <div id="leftLateral"></div>
+          </div>
+
+          <div class="box" id="rightFootMetrics">
+            <h3>Right Foot Metrics</h2>
+            <div id="rightTotal"></div>
+            <div id="rightCopX"></div>
+            <div id="rightCopY"></div>
+            <div id="rightForefoot"></div>
+            <div id="rightRearfoot"></div>
+            <div id="rightMedial"></div>
+            <div id="rightLateral"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
