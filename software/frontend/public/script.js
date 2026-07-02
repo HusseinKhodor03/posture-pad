@@ -3,6 +3,32 @@ const voltageOutput = document.getElementById("voltageOutput");
 const ws = new WebSocket("ws://localhost:8080");
 
 // --------------------------
+// Dashboard/config tabs
+// --------------------------
+const tabs = [
+  {
+    button: document.getElementById("dashboardTab"),
+    panel: document.getElementById("dashboardPanel"),
+  },
+  {
+    button: document.getElementById("configTab"),
+    panel: document.getElementById("configPanel"),
+  },
+];
+
+function activateTab(selectedTab) {
+  tabs.forEach((tab) => {
+    const isSelected = tab === selectedTab;
+    tab.button.classList.toggle("active", isSelected);
+    tab.panel.hidden = !isSelected;
+  });
+}
+
+tabs.forEach((tab) => {
+  tab.button.addEventListener("click", () => activateTab(tab));
+});
+
+// --------------------------
 // Sensor configurations
 // --------------------------
 const rightSensorConfig = {

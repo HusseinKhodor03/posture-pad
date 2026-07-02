@@ -1,0 +1,153 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  background: #f4f6f8;
+  color: #17202a;
+}
+
+.appHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  padding: 24px 40px 0;
+  background: #fff;
+  border-bottom: 1px solid #dfe4ea;
+}
+
+.appHeader h1 {
+  margin: 4px 0 20px;
+}
+
+.tabList {
+  display: flex;
+  gap: 8px;
+}
+
+.tabButton {
+  padding: 12px 18px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #667085;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tabButton:hover {
+  color: #17202a;
+}
+
+.tabButton:focus-visible {
+  outline: 3px solid #9ec5fe;
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+
+.tabButton.active {
+  border-bottom-color: #1769e0;
+  color: #1769e0;
+}
+
+.tabPanel {
+  padding: 20px;
+}
+
+.tabPanel[hidden] {
+  display: none;
+}
+
+#mainContainer {
+  display: flex;
+  justify-content: space-evenly;
+  background-color: #fff;
+  padding: 20px;
+  gap: 20px;
+  border-radius: 7px;
+}
+
+#container {
+  display: flex;
+  border: 5px solid #000;
+  border-radius: 20px;
+  padding: 30px 300px;
+  gap: 200px;
+}
+
+.foot {
+  position: relative;
+}
+
+.foot svg {
+  display: block;
+}
+
+#statsContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+.box {
+  background-color: #e0e0e0;
+  padding: 15px 20px;
+  border-radius: 10px;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+#footMetricsContainer {
+  display: flex;
+  gap: 20px;
+}
+
+#postureSummary {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.configCard {
+  max-width: 640px;
+  margin: 48px auto;
+  padding: 32px;
+  background: #fff;
+  border: 1px solid #dfe4ea;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(23, 32, 42, 0.08);
+}
+
+.configCard h2 {
+  margin: 14px 0 8px;
+}
+
+.configCard > p,
+.emptyState p {
+  color: #667085;
+  line-height: 1.6;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e8f1ff;
+  color: #1769e0;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.emptyState {
+  margin-top: 28px;
+  padding: 24px;
+  border: 1px dashed #aeb8c4;
+  border-radius: 12px;
+  background: #fafbfc;
+  text-align: center;
+}
+
+.emptyState h3 {
+  margin-top: 0;
+}
