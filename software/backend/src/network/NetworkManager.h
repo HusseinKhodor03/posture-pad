@@ -11,6 +11,7 @@ public:
     NetworkManager(const char *host, int port);
     void connect(const String &ssid, const String &password);
     void update();
+    bool isWifiConnected();
     bool isConnected();
     WiFiClient &getClient();
 

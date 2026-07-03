@@ -10,7 +10,7 @@ namespace
     const char *STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
 }
 
-BleProvisioner::BleProvisioner() : started(false), connectionRequested(false) {}
+BleProvisioner::BleProvisioner() : started(false), connectionRequested(false), statusCharacteristic(nullptr) {}
 
 void BleProvisioner::begin()
 {
@@ -28,7 +28,7 @@ void BleProvisioner::begin()
     NimBLECharacteristic *wifiSsidCharacteristic = service->createCharacteristic(WIFI_SSID_UUID, NIMBLE_PROPERTY::WRITE, 32);
     NimBLECharacteristic *wifiPasswordCharacteristic = service->createCharacteristic(WIFI_PASSWORD_UUID, NIMBLE_PROPERTY::WRITE, 64);
     NimBLECharacteristic *commandCharacteristic = service->createCharacteristic(COMMAND_UUID, NIMBLE_PROPERTY::WRITE, 16);
-    NimBLECharacteristic *statusCharacteristic = service->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 24);
+    statusCharacteristic = service->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 24);
 
     wifiSsidCharacteristic->setCallbacks(this);
     wifiPasswordCharacteristic->setCallbacks(this);
@@ -36,6 +36,7 @@ void BleProvisioner::begin()
 
     deviceIdCharacteristic->setValue(deviceId.c_str());
     statusCharacteristic->setValue("unconfigured");
+    currentStatus = "unconfigured";
     service->start();
 
     NimBLEAdvertising *advertising = NimBLEDevice::getAdvertising();
@@ -92,6 +93,16 @@ bool BleProvisioner::takeConnectionRequest(String &ssid, String &password)
     connectionRequested = false;
 
     return true;
+}
+
+void BleProvisioner::setStatus(const String &status)
+{
+    if (statusCharacteristic == nullptr || status == currentStatus)
+        return;
+
+    currentStatus = status;
+    statusCharacteristic->setValue(status.c_str());
+    statusCharacteristic->notify();
 }
 
 String BleProvisioner::buildDeviceId() const

@@ -22,6 +22,11 @@ void NetworkManager::update()
     ensureTcpConnected();
 }
 
+bool NetworkManager::isWifiConnected()
+{
+    return WiFi.status() == WL_CONNECTED;
+}
+
 bool NetworkManager::isConnected()
 {
     return (WiFi.status() == WL_CONNECTED) && client.connected();

@@ -54,6 +54,20 @@ let wifiSsidCharacteristic;
 let wifiPasswordCharacteristic;
 let commandCharacteristic;
 
+function updateWifiStatus(status) {
+  bleDeviceStatus.textContent = status;
+
+  if (status === "connecting") {
+    bleMessage.textContent = "The Posture Pad is connecting to Wi-Fi...";
+  } else if (status === "connected") {
+    bleMessage.textContent = "The Posture Pad is connected to Wi-Fi.";
+  }
+}
+
+function handleWifiStatusChange(event) {
+  updateWifiStatus(new TextDecoder().decode(event.target.value));
+}
+
 function handleBleDisconnect() {
   wifiSsidCharacteristic = undefined;
   wifiPasswordCharacteristic = undefined;
@@ -101,14 +115,20 @@ connectBleButton.addEventListener("click", async () => {
     const statusValue = await statusCharacteristic.readValue();
     const decoder = new TextDecoder();
 
+    statusCharacteristic.addEventListener(
+      "characteristicvaluechanged",
+      handleWifiStatusChange,
+    );
+    await statusCharacteristic.startNotifications();
+
     bleDeviceName.textContent = device.name;
     bleDeviceId.textContent = decoder.decode(deviceIdValue);
-    bleDeviceStatus.textContent = decoder.decode(statusValue);
     bleDeviceDetails.hidden = false;
     wifiForm.hidden = false;
     connectWifiButton.disabled = false;
     bleStatus.textContent = "Connected";
     bleMessage.textContent = "Your Posture Pad is connected over Bluetooth.";
+    updateWifiStatus(decoder.decode(statusValue));
     connectBleButton.textContent = "Connected";
   } catch (error) {
     console.error("Bluetooth connection failed:", error);
@@ -143,7 +163,9 @@ connectWifiButton.addEventListener("click", async () => {
       encoder.encode("connect"),
     );
 
-    bleMessage.textContent = "Wi-Fi credentials sent to the Posture Pad.";
+    if (bleDeviceStatus.textContent === "unconfigured") {
+      bleMessage.textContent = "Wi-Fi credentials sent to the Posture Pad.";
+    }
   } catch (error) {
     console.error("Could not send Wi-Fi credentials:", error);
     bleMessage.textContent = "Could not send the Wi-Fi credentials.";

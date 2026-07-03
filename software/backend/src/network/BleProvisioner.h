@@ -10,12 +10,15 @@ public:
     BleProvisioner();
     void begin();
     bool takeConnectionRequest(String &ssid, String &password);
+    void setStatus(const String &status);
 
 private:
     bool started;
     String pendingSsid;
     String pendingPassword;
     bool connectionRequested;
+    NimBLECharacteristic *statusCharacteristic;
+    String currentStatus;
 
     String buildDeviceId() const;
     void onWrite(NimBLECharacteristic *characteristic, NimBLEConnInfo &connectionInfo) override;

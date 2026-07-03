@@ -1,6 +1,6 @@
 #include "DeviceManager.h"
 
-DeviceManager::DeviceManager(const char *host, int port) : sensorReader(muxController), networkManager(host, port), tcpClient(networkManager.getClient()), lastBlinkTime(0), ledState(false) {}
+DeviceManager::DeviceManager(const char *host, int port) : sensorReader(muxController), networkManager(host, port), tcpClient(networkManager.getClient()), lastBlinkTime(0), ledState(false), wifiConnectionPending(false) {}
 
 void DeviceManager::init()
 {
@@ -22,9 +22,21 @@ void DeviceManager::update()
     String provisionedPassword;
 
     if (bleProvisioner.takeConnectionRequest(provisionedSsid, provisionedPassword))
+    {
         networkManager.connect(provisionedSsid, provisionedPassword);
+        bleProvisioner.setStatus("connecting");
+        wifiConnectionPending = true;
+    }
 
     networkManager.update();
+
+    if (wifiConnectionPending && networkManager.isWifiConnected())
+    {
+        bleProvisioner.setStatus("connected");
+        wifiConnectionPending = false;
+        Serial.println("Connected to Wi-Fi!");
+    }
+
     updateLed();
 
     sensorReader.readAllSensors(leftFoot, rightFoot);
