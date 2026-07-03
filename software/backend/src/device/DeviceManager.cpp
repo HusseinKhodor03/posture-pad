@@ -11,6 +11,7 @@ void DeviceManager::init()
     digitalWrite(LED_BUILTIN, LOW);
 
     sensorReader.init();
+    bleProvisioner.begin();
     networkManager.connect();
 
     Serial.println("Posture Pad Initialized!");

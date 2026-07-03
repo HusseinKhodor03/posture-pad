@@ -1,0 +1,45 @@
+#include "BleProvisioner.h"
+
+#include <NimBLEDevice.h>
+
+namespace
+{
+    const char *SERVICE_UUID = "e1a87d62-5df4-42f4-9cf9-fe3b312a8d85";
+    const char *DEVICE_ID_UUID = "31c794a4-7189-4023-beb7-f908f31e6224";
+}
+
+BleProvisioner::BleProvisioner() : started(false) {}
+
+void BleProvisioner::begin()
+{
+    if (started)
+        return;
+
+    String deviceId = buildDeviceId();
+    String deviceName = "PosturePad-" + deviceId.substring(6);
+
+    NimBLEDevice::init(deviceName.c_str());
+
+    NimBLEServer *server = NimBLEDevice::createServer();
+    NimBLEService *service = server->createService(SERVICE_UUID);
+    NimBLECharacteristic *deviceIdCharacteristic = service->createCharacteristic(DEVICE_ID_UUID, NIMBLE_PROPERTY::READ);
+
+    deviceIdCharacteristic->setValue(deviceId.c_str());
+    service->start();
+
+    NimBLEAdvertising *advertising = NimBLEDevice::getAdvertising();
+    advertising->setName(deviceName.c_str());
+    advertising->addServiceUUID(SERVICE_UUID);
+    advertising->enableScanResponse(true);
+    advertising->start();
+
+    started = true;
+    Serial.printf("BLE device available as %s\n", deviceName.c_str());
+}
+
+String BleProvisioner::buildDeviceId() const
+{
+    char deviceId[13];
+    snprintf(deviceId, sizeof(deviceId), "%012llX", static_cast<unsigned long long>(ESP.getEfuseMac()));
+    return String(deviceId);
+}

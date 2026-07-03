@@ -11,6 +11,7 @@
 #include "../processing/analysis/PostureAnalyzer.h"
 #include "../data/formatter/DataFormatter.h"
 #include "../data/serialization/JsonSerializer.h"
+#include "../network/BleProvisioner.h"
 #include "../network/NetworkManager.h"
 #include "../network/TcpClient.h"
 
@@ -29,6 +30,7 @@ private:
     PostureAnalyzer postureAnalyzer;
     DataFormatter dataFormatter;
     JsonSerializer jsonSerializer;
+    BleProvisioner bleProvisioner;
     NetworkManager networkManager;
     TcpClient tcpClient;
 
