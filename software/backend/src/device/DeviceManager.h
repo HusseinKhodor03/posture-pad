@@ -46,6 +46,7 @@ private:
     unsigned long lastBlinkTime;
     bool ledState;
     bool wifiConnectionPending;
+    bool saveCredentialsOnConnect;
 
     void updateLed();
 };

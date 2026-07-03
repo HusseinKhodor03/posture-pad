@@ -10,6 +10,8 @@ class NetworkManager
 public:
     NetworkManager(const char *host, int port);
     void connect(const String &ssid, const String &password);
+    bool connectSavedCredentials();
+    void saveCredentials();
     void update();
     bool isWifiConnected();
     bool isConnected();

@@ -1,6 +1,6 @@
 #include "DeviceManager.h"
 
-DeviceManager::DeviceManager(const char *host, int port) : sensorReader(muxController), networkManager(host, port), tcpClient(networkManager.getClient()), lastBlinkTime(0), ledState(false), wifiConnectionPending(false) {}
+DeviceManager::DeviceManager(const char *host, int port) : sensorReader(muxController), networkManager(host, port), tcpClient(networkManager.getClient()), lastBlinkTime(0), ledState(false), wifiConnectionPending(false), saveCredentialsOnConnect(false) {}
 
 void DeviceManager::init()
 {
@@ -12,6 +12,12 @@ void DeviceManager::init()
 
     sensorReader.init();
     bleProvisioner.begin();
+
+    if (networkManager.connectSavedCredentials())
+    {
+        bleProvisioner.setStatus("connecting");
+        wifiConnectionPending = true;
+    }
 
     Serial.println("Posture Pad Initialized!");
 }
@@ -26,12 +32,19 @@ void DeviceManager::update()
         networkManager.connect(provisionedSsid, provisionedPassword);
         bleProvisioner.setStatus("connecting");
         wifiConnectionPending = true;
+        saveCredentialsOnConnect = true;
     }
 
     networkManager.update();
 
     if (wifiConnectionPending && networkManager.isWifiConnected())
     {
+        if (saveCredentialsOnConnect)
+        {
+            networkManager.saveCredentials();
+            saveCredentialsOnConnect = false;
+        }
+
         bleProvisioner.setStatus("connected");
         wifiConnectionPending = false;
         Serial.println("Connected to Wi-Fi!");
