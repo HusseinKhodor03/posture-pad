@@ -6,6 +6,10 @@ namespace
 {
     const char *SERVICE_UUID = "e1a87d62-5df4-42f4-9cf9-fe3b312a8d85";
     const char *DEVICE_ID_UUID = "31c794a4-7189-4023-beb7-f908f31e6224";
+    const char *WIFI_SSID_UUID = "426b1b2a-c11b-49c2-9053-1ba2afc1f6c1";
+    const char *WIFI_PASSWORD_UUID = "ff386352-081f-4803-b256-c0fba4085d2d";
+    const char *COMMAND_UUID = "1d831e2f-0ca5-4bf4-9f84-39487ad6b635";
+    const char *STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
 }
 
 BleProvisioner::BleProvisioner() : started(false) {}
@@ -23,8 +27,13 @@ void BleProvisioner::begin()
     NimBLEServer *server = NimBLEDevice::createServer();
     NimBLEService *service = server->createService(SERVICE_UUID);
     NimBLECharacteristic *deviceIdCharacteristic = service->createCharacteristic(DEVICE_ID_UUID, NIMBLE_PROPERTY::READ);
+    service->createCharacteristic(WIFI_SSID_UUID, NIMBLE_PROPERTY::WRITE, 32);
+    service->createCharacteristic(WIFI_PASSWORD_UUID, NIMBLE_PROPERTY::WRITE, 64);
+    service->createCharacteristic(COMMAND_UUID, NIMBLE_PROPERTY::WRITE, 16);
+    NimBLECharacteristic *statusCharacteristic = service->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 24);
 
     deviceIdCharacteristic->setValue(deviceId.c_str());
+    statusCharacteristic->setValue("unconfigured");
     service->start();
 
     NimBLEAdvertising *advertising = NimBLEDevice::getAdvertising();
