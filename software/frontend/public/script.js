@@ -33,6 +33,9 @@ tabs.forEach((tab) => {
 // --------------------------
 const BLE_SERVICE_UUID = "e1a87d62-5df4-42f4-9cf9-fe3b312a8d85";
 const DEVICE_ID_UUID = "31c794a4-7189-4023-beb7-f908f31e6224";
+const WIFI_SSID_UUID = "426b1b2a-c11b-49c2-9053-1ba2afc1f6c1";
+const WIFI_PASSWORD_UUID = "ff386352-081f-4803-b256-c0fba4085d2d";
+const COMMAND_UUID = "1d831e2f-0ca5-4bf4-9f84-39487ad6b635";
 const STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
 
 const connectBleButton = document.getElementById("connectBleButton");
@@ -43,11 +46,22 @@ const bleDeviceDetails = document.getElementById("bleDeviceDetails");
 const bleDeviceId = document.getElementById("bleDeviceId");
 const bleDeviceStatus = document.getElementById("bleDeviceStatus");
 const wifiForm = document.getElementById("wifiForm");
+const wifiSsid = document.getElementById("wifiSsid");
+const wifiPassword = document.getElementById("wifiPassword");
+const connectWifiButton = document.getElementById("connectWifiButton");
+
+let wifiSsidCharacteristic;
+let wifiPasswordCharacteristic;
+let commandCharacteristic;
 
 function handleBleDisconnect() {
+  wifiSsidCharacteristic = undefined;
+  wifiPasswordCharacteristic = undefined;
+  commandCharacteristic = undefined;
   bleStatus.textContent = "Disconnected";
   bleMessage.textContent = "The Bluetooth connection was closed.";
   wifiForm.hidden = true;
+  connectWifiButton.disabled = true;
   connectBleButton.disabled = false;
   connectBleButton.textContent = "Reconnect Posture Pad";
 }
@@ -77,6 +91,11 @@ connectBleButton.addEventListener("click", async () => {
       await service.getCharacteristic(DEVICE_ID_UUID);
     const statusCharacteristic =
       await service.getCharacteristic(STATUS_UUID);
+    wifiSsidCharacteristic =
+      await service.getCharacteristic(WIFI_SSID_UUID);
+    wifiPasswordCharacteristic =
+      await service.getCharacteristic(WIFI_PASSWORD_UUID);
+    commandCharacteristic = await service.getCharacteristic(COMMAND_UUID);
 
     const deviceIdValue = await deviceIdCharacteristic.readValue();
     const statusValue = await statusCharacteristic.readValue();
@@ -87,6 +106,7 @@ connectBleButton.addEventListener("click", async () => {
     bleDeviceStatus.textContent = decoder.decode(statusValue);
     bleDeviceDetails.hidden = false;
     wifiForm.hidden = false;
+    connectWifiButton.disabled = false;
     bleStatus.textContent = "Connected";
     bleMessage.textContent = "Your Posture Pad is connected over Bluetooth.";
     connectBleButton.textContent = "Connected";
@@ -95,6 +115,41 @@ connectBleButton.addEventListener("click", async () => {
     bleStatus.textContent = "Not connected";
     bleMessage.textContent = "Could not connect to the Posture Pad.";
     connectBleButton.disabled = false;
+  }
+});
+
+connectWifiButton.addEventListener("click", async () => {
+  const encoder = new TextEncoder();
+  const ssidValue = encoder.encode(wifiSsid.value);
+  const passwordValue = encoder.encode(wifiPassword.value);
+
+  if (ssidValue.length === 0) {
+    bleMessage.textContent = "Enter a Wi-Fi network name.";
+    return;
+  }
+
+  if (ssidValue.length > 32 || passwordValue.length > 64) {
+    bleMessage.textContent = "The network name or password is too long.";
+    return;
+  }
+
+  connectWifiButton.disabled = true;
+  connectWifiButton.textContent = "Sending...";
+
+  try {
+    await wifiSsidCharacteristic.writeValueWithResponse(ssidValue);
+    await wifiPasswordCharacteristic.writeValueWithResponse(passwordValue);
+    await commandCharacteristic.writeValueWithResponse(
+      encoder.encode("connect"),
+    );
+
+    bleMessage.textContent = "Wi-Fi credentials sent to the Posture Pad.";
+  } catch (error) {
+    console.error("Could not send Wi-Fi credentials:", error);
+    bleMessage.textContent = "Could not send the Wi-Fi credentials.";
+  } finally {
+    connectWifiButton.disabled = false;
+    connectWifiButton.textContent = "Connect to Wi-Fi";
   }
 });
 
