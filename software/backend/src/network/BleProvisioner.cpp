@@ -1,7 +1,5 @@
 #include "BleProvisioner.h"
 
-#include <NimBLEDevice.h>
-
 namespace
 {
     const char *SERVICE_UUID = "e1a87d62-5df4-42f4-9cf9-fe3b312a8d85";
@@ -10,34 +8,9 @@ namespace
     const char *WIFI_PASSWORD_UUID = "ff386352-081f-4803-b256-c0fba4085d2d";
     const char *COMMAND_UUID = "1d831e2f-0ca5-4bf4-9f84-39487ad6b635";
     const char *STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
-
-    class ProvisioningCallbacks : public NimBLECharacteristicCallbacks
-    {
-    public:
-        void onWrite(NimBLECharacteristic *characteristic, NimBLEConnInfo &) override
-        {
-            const NimBLEUUID &uuid = characteristic->getUUID();
-            const NimBLEAttValue &value = characteristic->getValue();
-
-            if (uuid == NimBLEUUID(WIFI_SSID_UUID))
-            {
-                Serial.printf("Received Wi-Fi SSID: %.*s\n", static_cast<int>(value.length()), value.c_str());
-            }
-            else if (uuid == NimBLEUUID(WIFI_PASSWORD_UUID))
-            {
-                Serial.printf("Received Wi-Fi password (%u bytes)\n", static_cast<unsigned int>(value.length()));
-            }
-            else if (uuid == NimBLEUUID(COMMAND_UUID))
-            {
-                Serial.printf("Received BLE command: %.*s\n", static_cast<int>(value.length()), value.c_str());
-            }
-        }
-    };
-
-    ProvisioningCallbacks provisioningCallbacks;
 }
 
-BleProvisioner::BleProvisioner() : started(false) {}
+BleProvisioner::BleProvisioner() : started(false), connectionRequested(false) {}
 
 void BleProvisioner::begin()
 {
@@ -57,9 +30,9 @@ void BleProvisioner::begin()
     NimBLECharacteristic *commandCharacteristic = service->createCharacteristic(COMMAND_UUID, NIMBLE_PROPERTY::WRITE, 16);
     NimBLECharacteristic *statusCharacteristic = service->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 24);
 
-    wifiSsidCharacteristic->setCallbacks(&provisioningCallbacks);
-    wifiPasswordCharacteristic->setCallbacks(&provisioningCallbacks);
-    commandCharacteristic->setCallbacks(&provisioningCallbacks);
+    wifiSsidCharacteristic->setCallbacks(this);
+    wifiPasswordCharacteristic->setCallbacks(this);
+    commandCharacteristic->setCallbacks(this);
 
     deviceIdCharacteristic->setValue(deviceId.c_str());
     statusCharacteristic->setValue("unconfigured");
@@ -73,6 +46,37 @@ void BleProvisioner::begin()
 
     started = true;
     Serial.printf("BLE device available as %s\n", deviceName.c_str());
+}
+
+void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInfo &)
+{
+    const NimBLEUUID &uuid = characteristic->getUUID();
+    const std::string value = characteristic->getValue();
+
+    if (uuid == NimBLEUUID(WIFI_SSID_UUID))
+    {
+        pendingSsid = value.c_str();
+        Serial.printf("Stored Wi-Fi SSID: %s\n", pendingSsid.c_str());
+    }
+    else if (uuid == NimBLEUUID(WIFI_PASSWORD_UUID))
+    {
+        pendingPassword = value.c_str();
+        Serial.printf("Stored Wi-Fi password (%u bytes)\n", static_cast<unsigned int>(value.length()));
+    }
+    else if (uuid == NimBLEUUID(COMMAND_UUID))
+    {
+        Serial.printf("Received BLE command: %s\n", value.c_str());
+
+        if (value == "connect" && !pendingSsid.isEmpty())
+        {
+            connectionRequested = true;
+            Serial.println("Wi-Fi connection requested");
+        }
+        else if (value == "connect")
+        {
+            Serial.println("Ignored connect command: no Wi-Fi SSID received");
+        }
+    }
 }
 
 String BleProvisioner::buildDeviceId() const

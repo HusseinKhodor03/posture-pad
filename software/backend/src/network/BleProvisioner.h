@@ -2,8 +2,9 @@
 #define BLE_PROVISIONER_H
 
 #include <Arduino.h>
+#include <NimBLEDevice.h>
 
-class BleProvisioner
+class BleProvisioner : private NimBLECharacteristicCallbacks
 {
 public:
     BleProvisioner();
@@ -11,8 +12,12 @@ public:
 
 private:
     bool started;
+    String pendingSsid;
+    String pendingPassword;
+    bool connectionRequested;
 
     String buildDeviceId() const;
+    void onWrite(NimBLECharacteristic *characteristic, NimBLEConnInfo &connectionInfo) override;
 };
 
 #endif
