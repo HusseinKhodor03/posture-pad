@@ -8,15 +8,15 @@
 class NetworkManager
 {
 public:
-    NetworkManager(const char *ssid, const char *password, const char *host, int port);
-    void connect();
+    NetworkManager(const char *host, int port);
+    void connect(const String &ssid, const String &password);
     void update();
     bool isConnected();
     WiFiClient &getClient();
 
 private:
-    const char *ssid;
-    const char *password;
+    String ssid;
+    String password;
     const char *host;
     int port;
 

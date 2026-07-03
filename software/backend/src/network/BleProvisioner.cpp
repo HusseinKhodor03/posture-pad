@@ -79,6 +79,21 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
     }
 }
 
+bool BleProvisioner::takeConnectionRequest(String &ssid, String &password)
+{
+    if (!connectionRequested)
+        return false;
+
+    ssid = pendingSsid;
+    password = pendingPassword;
+
+    pendingSsid = "";
+    pendingPassword = "";
+    connectionRequested = false;
+
+    return true;
+}
+
 String BleProvisioner::buildDeviceId() const
 {
     char deviceId[13];

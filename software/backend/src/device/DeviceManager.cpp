@@ -1,6 +1,6 @@
 #include "DeviceManager.h"
 
-DeviceManager::DeviceManager(const char *ssid, const char *password, const char *host, int port) : sensorReader(muxController), networkManager(ssid, password, host, port), tcpClient(networkManager.getClient()), lastBlinkTime(0), ledState(false) {}
+DeviceManager::DeviceManager(const char *host, int port) : sensorReader(muxController), networkManager(host, port), tcpClient(networkManager.getClient()), lastBlinkTime(0), ledState(false) {}
 
 void DeviceManager::init()
 {
@@ -12,13 +12,18 @@ void DeviceManager::init()
 
     sensorReader.init();
     bleProvisioner.begin();
-    networkManager.connect();
 
     Serial.println("Posture Pad Initialized!");
 }
 
 void DeviceManager::update()
 {
+    String provisionedSsid;
+    String provisionedPassword;
+
+    if (bleProvisioner.takeConnectionRequest(provisionedSsid, provisionedPassword))
+        networkManager.connect(provisionedSsid, provisionedPassword);
+
     networkManager.update();
     updateLed();
 

@@ -9,6 +9,7 @@ class BleProvisioner : private NimBLECharacteristicCallbacks
 public:
     BleProvisioner();
     void begin();
+    bool takeConnectionRequest(String &ssid, String &password);
 
 private:
     bool started;

@@ -18,7 +18,7 @@
 class DeviceManager
 {
 public:
-    DeviceManager(const char *ssid, const char *password, const char *host, int port);
+    DeviceManager(const char *host, int port);
     void init();
     void update();
 

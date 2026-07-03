@@ -1,12 +1,19 @@
 #include "NetworkManager.h"
 
-NetworkManager::NetworkManager(const char *ssid, const char *password, const char *host, int port) : ssid(ssid), password(password), host(host), port(port), lastWifiAttempt(0), lastTcpAttempt(0) {}
+NetworkManager::NetworkManager(const char *host, int port) : host(host), port(port), lastWifiAttempt(0), lastTcpAttempt(0) {}
 
-void NetworkManager::connect()
+void NetworkManager::connect(const String &newSsid, const String &newPassword)
 {
-    WiFi.begin(ssid, password);
+    client.stop();
+    WiFi.disconnect();
+
+    ssid = newSsid;
+    password = newPassword;
     lastWifiAttempt = millis();
-    Serial.println("Connecting to WiFi...");
+    lastTcpAttempt = 0;
+
+    WiFi.begin(ssid.c_str(), password.c_str());
+    Serial.printf("Connecting to Wi-Fi network: %s\n", ssid.c_str());
 }
 
 void NetworkManager::update()
@@ -27,6 +34,9 @@ WiFiClient &NetworkManager::getClient()
 
 void NetworkManager::ensureWifiConnected()
 {
+    if (ssid.isEmpty())
+        return;
+
     if (WiFi.status() == WL_CONNECTED)
         return;
 
@@ -37,7 +47,7 @@ void NetworkManager::ensureWifiConnected()
     lastWifiAttempt = now;
     WiFi.disconnect();
     delay(100);
-    WiFi.begin(ssid, password);
+    WiFi.begin(ssid.c_str(), password.c_str());
 }
 
 void NetworkManager::ensureTcpConnected()
