@@ -42,10 +42,12 @@ const bleMessage = document.getElementById("bleMessage");
 const bleDeviceDetails = document.getElementById("bleDeviceDetails");
 const bleDeviceId = document.getElementById("bleDeviceId");
 const bleDeviceStatus = document.getElementById("bleDeviceStatus");
+const wifiForm = document.getElementById("wifiForm");
 
 function handleBleDisconnect() {
   bleStatus.textContent = "Disconnected";
   bleMessage.textContent = "The Bluetooth connection was closed.";
+  wifiForm.hidden = true;
   connectBleButton.disabled = false;
   connectBleButton.textContent = "Reconnect Posture Pad";
 }
@@ -84,6 +86,7 @@ connectBleButton.addEventListener("click", async () => {
     bleDeviceId.textContent = decoder.decode(deviceIdValue);
     bleDeviceStatus.textContent = decoder.decode(statusValue);
     bleDeviceDetails.hidden = false;
+    wifiForm.hidden = false;
     bleStatus.textContent = "Connected";
     bleMessage.textContent = "Your Posture Pad is connected over Bluetooth.";
     connectBleButton.textContent = "Connected";

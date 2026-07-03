@@ -175,3 +175,24 @@ body {
 #bleDeviceDetails p {
   margin: 6px 0;
 }
+
+.wifiForm {
+  margin-top: 28px;
+}
+
+.wifiForm label {
+  display: block;
+  margin: 16px 0;
+  font-weight: 700;
+}
+
+.wifiForm input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 6px;
+  padding: 10px;
+  border: 1px solid #aeb8c4;
+  border-radius: 8px;
+  font: inherit;
+}

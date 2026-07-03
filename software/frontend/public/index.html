@@ -81,6 +81,24 @@
             <p>Device status: <span id="bleDeviceStatus"></span></p>
           </div>
         </div>
+
+        <div class="wifiForm" id="wifiForm" hidden>
+          <h3>Wi-Fi network</h3>
+
+          <label>
+            Network name
+            <input id="wifiSsid" />
+          </label>
+
+          <label>
+            Password
+            <input id="wifiPassword" type="password" />
+          </label>
+
+          <button class="connectButton" id="connectWifiButton" disabled>
+            Connect to Wi-Fi
+          </button>
+        </div>
       </div>
     </section>
 
