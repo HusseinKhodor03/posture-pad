@@ -10,6 +10,31 @@ namespace
     const char *WIFI_PASSWORD_UUID = "ff386352-081f-4803-b256-c0fba4085d2d";
     const char *COMMAND_UUID = "1d831e2f-0ca5-4bf4-9f84-39487ad6b635";
     const char *STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
+
+    class ProvisioningCallbacks : public NimBLECharacteristicCallbacks
+    {
+    public:
+        void onWrite(NimBLECharacteristic *characteristic, NimBLEConnInfo &) override
+        {
+            const NimBLEUUID &uuid = characteristic->getUUID();
+            const NimBLEAttValue &value = characteristic->getValue();
+
+            if (uuid == NimBLEUUID(WIFI_SSID_UUID))
+            {
+                Serial.printf("Received Wi-Fi SSID: %.*s\n", static_cast<int>(value.length()), value.c_str());
+            }
+            else if (uuid == NimBLEUUID(WIFI_PASSWORD_UUID))
+            {
+                Serial.printf("Received Wi-Fi password (%u bytes)\n", static_cast<unsigned int>(value.length()));
+            }
+            else if (uuid == NimBLEUUID(COMMAND_UUID))
+            {
+                Serial.printf("Received BLE command: %.*s\n", static_cast<int>(value.length()), value.c_str());
+            }
+        }
+    };
+
+    ProvisioningCallbacks provisioningCallbacks;
 }
 
 BleProvisioner::BleProvisioner() : started(false) {}
@@ -27,10 +52,14 @@ void BleProvisioner::begin()
     NimBLEServer *server = NimBLEDevice::createServer();
     NimBLEService *service = server->createService(SERVICE_UUID);
     NimBLECharacteristic *deviceIdCharacteristic = service->createCharacteristic(DEVICE_ID_UUID, NIMBLE_PROPERTY::READ);
-    service->createCharacteristic(WIFI_SSID_UUID, NIMBLE_PROPERTY::WRITE, 32);
-    service->createCharacteristic(WIFI_PASSWORD_UUID, NIMBLE_PROPERTY::WRITE, 64);
-    service->createCharacteristic(COMMAND_UUID, NIMBLE_PROPERTY::WRITE, 16);
+    NimBLECharacteristic *wifiSsidCharacteristic = service->createCharacteristic(WIFI_SSID_UUID, NIMBLE_PROPERTY::WRITE, 32);
+    NimBLECharacteristic *wifiPasswordCharacteristic = service->createCharacteristic(WIFI_PASSWORD_UUID, NIMBLE_PROPERTY::WRITE, 64);
+    NimBLECharacteristic *commandCharacteristic = service->createCharacteristic(COMMAND_UUID, NIMBLE_PROPERTY::WRITE, 16);
     NimBLECharacteristic *statusCharacteristic = service->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 24);
+
+    wifiSsidCharacteristic->setCallbacks(&provisioningCallbacks);
+    wifiPasswordCharacteristic->setCallbacks(&provisioningCallbacks);
+    commandCharacteristic->setCallbacks(&provisioningCallbacks);
 
     deviceIdCharacteristic->setValue(deviceId.c_str());
     statusCharacteristic->setValue("unconfigured");
