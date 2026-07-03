@@ -5,19 +5,8 @@ NetworkManager::NetworkManager(const char *ssid, const char *password, const cha
 void NetworkManager::connect()
 {
     WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        Serial.println("Connecting to WiFi...");
-        delay(500);
-    }
-    Serial.println("Connected to WiFi!");
-
-    while (!client.connect(host, port))
-    {
-        Serial.println("Connecting to Node TCP server...");
-        delay(500);
-    }
-    Serial.println("Connected to Node TCP server!");
+    lastWifiAttempt = millis();
+    Serial.println("Connecting to WiFi...");
 }
 
 void NetworkManager::update()
