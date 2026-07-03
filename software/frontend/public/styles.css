@@ -151,3 +151,27 @@ body {
 .emptyState h3 {
   margin-top: 0;
 }
+
+.connectButton {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #1769e0;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.connectButton:disabled {
+  background: #aeb8c4;
+  cursor: default;
+}
+
+#bleDeviceDetails {
+  margin-top: 20px;
+}
+
+#bleDeviceDetails p {
+  margin: 6px 0;
+}

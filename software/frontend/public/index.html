@@ -63,19 +63,23 @@
 
     <section class="tabPanel" id="configPanel" hidden>
       <div class="configCard">
-        <span class="statusBadge">Setup coming next</span>
+        <span class="statusBadge" id="bleStatus">Not connected</span>
         <h2>Device configuration</h2>
         <p>
-          Bluetooth pairing and Wi-Fi setup will live here. For now, this tab is
-          only the interface shell.
+          Connect to your Posture Pad over Bluetooth to begin setup.
         </p>
 
         <div class="emptyState">
-          <h3>No Posture Pad connected</h3>
-          <p>
-            Make sure your device is powered on. The Bluetooth connection
-            controls will be added in the next steps.
-          </p>
+          <h3 id="bleDeviceName">No Posture Pad connected</h3>
+          <p id="bleMessage">Make sure your device is powered on and nearby.</p>
+          <button class="connectButton" id="connectBleButton">
+            Connect Posture Pad
+          </button>
+
+          <div id="bleDeviceDetails" hidden>
+            <p>Device ID: <span id="bleDeviceId"></span></p>
+            <p>Device status: <span id="bleDeviceStatus"></span></p>
+          </div>
         </div>
       </div>
     </section>

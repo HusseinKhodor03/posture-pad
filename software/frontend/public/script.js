@@ -29,6 +29,73 @@ tabs.forEach((tab) => {
 });
 
 // --------------------------
+// Bluetooth device connection
+// --------------------------
+const BLE_SERVICE_UUID = "e1a87d62-5df4-42f4-9cf9-fe3b312a8d85";
+const DEVICE_ID_UUID = "31c794a4-7189-4023-beb7-f908f31e6224";
+const STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
+
+const connectBleButton = document.getElementById("connectBleButton");
+const bleStatus = document.getElementById("bleStatus");
+const bleDeviceName = document.getElementById("bleDeviceName");
+const bleMessage = document.getElementById("bleMessage");
+const bleDeviceDetails = document.getElementById("bleDeviceDetails");
+const bleDeviceId = document.getElementById("bleDeviceId");
+const bleDeviceStatus = document.getElementById("bleDeviceStatus");
+
+function handleBleDisconnect() {
+  bleStatus.textContent = "Disconnected";
+  bleMessage.textContent = "The Bluetooth connection was closed.";
+  connectBleButton.disabled = false;
+  connectBleButton.textContent = "Reconnect Posture Pad";
+}
+
+connectBleButton.addEventListener("click", async () => {
+  if (!navigator.bluetooth) {
+    bleStatus.textContent = "Bluetooth unavailable";
+    bleMessage.textContent =
+      "This browser does not support Web Bluetooth. Try Chrome or Edge.";
+    return;
+  }
+
+  connectBleButton.disabled = true;
+  bleStatus.textContent = "Connecting...";
+  bleMessage.textContent = "Choose your Posture Pad from the browser prompt.";
+
+  try {
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [BLE_SERVICE_UUID] }],
+    });
+
+    device.addEventListener("gattserverdisconnected", handleBleDisconnect);
+
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(BLE_SERVICE_UUID);
+    const deviceIdCharacteristic =
+      await service.getCharacteristic(DEVICE_ID_UUID);
+    const statusCharacteristic =
+      await service.getCharacteristic(STATUS_UUID);
+
+    const deviceIdValue = await deviceIdCharacteristic.readValue();
+    const statusValue = await statusCharacteristic.readValue();
+    const decoder = new TextDecoder();
+
+    bleDeviceName.textContent = device.name;
+    bleDeviceId.textContent = decoder.decode(deviceIdValue);
+    bleDeviceStatus.textContent = decoder.decode(statusValue);
+    bleDeviceDetails.hidden = false;
+    bleStatus.textContent = "Connected";
+    bleMessage.textContent = "Your Posture Pad is connected over Bluetooth.";
+    connectBleButton.textContent = "Connected";
+  } catch (error) {
+    console.error("Bluetooth connection failed:", error);
+    bleStatus.textContent = "Not connected";
+    bleMessage.textContent = "Could not connect to the Posture Pad.";
+    connectBleButton.disabled = false;
+  }
+});
+
+// --------------------------
 // Sensor configurations
 // --------------------------
 const rightSensorConfig = {
