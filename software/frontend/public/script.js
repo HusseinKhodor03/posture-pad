@@ -4,6 +4,19 @@ const DEVICE_ID_STORAGE_KEY = "posturePadDeviceId";
 let selectedDeviceId = localStorage.getItem(DEVICE_ID_STORAGE_KEY);
 const ws = new WebSocket("ws://localhost:8080");
 
+function subscribeToSelectedDevice() {
+  if (!selectedDeviceId || ws.readyState !== WebSocket.OPEN) return;
+
+  ws.send(
+    JSON.stringify({
+      type: "subscribe",
+      device_id: selectedDeviceId,
+    }),
+  );
+}
+
+ws.addEventListener("open", subscribeToSelectedDevice);
+
 // --------------------------
 // Dashboard/config tabs
 // --------------------------
@@ -125,6 +138,7 @@ connectBleButton.addEventListener("click", async () => {
 
     selectedDeviceId = decoder.decode(deviceIdValue);
     localStorage.setItem(DEVICE_ID_STORAGE_KEY, selectedDeviceId);
+    subscribeToSelectedDevice();
 
     bleDeviceName.textContent = device.name;
     bleDeviceId.textContent = selectedDeviceId;
