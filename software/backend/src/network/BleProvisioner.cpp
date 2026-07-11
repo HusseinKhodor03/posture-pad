@@ -17,7 +17,7 @@ void BleProvisioner::begin()
     if (started)
         return;
 
-    String deviceId = buildDeviceId();
+    deviceId = buildDeviceId();
     String deviceName = "PosturePad-" + deviceId.substring(6);
 
     NimBLEDevice::init(deviceName.c_str());
@@ -103,6 +103,11 @@ void BleProvisioner::setStatus(const String &status)
     currentStatus = status;
     statusCharacteristic->setValue(status.c_str());
     statusCharacteristic->notify();
+}
+
+const String &BleProvisioner::getDeviceId() const
+{
+    return deviceId;
 }
 
 String BleProvisioner::buildDeviceId() const

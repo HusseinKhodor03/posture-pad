@@ -71,7 +71,7 @@ void DeviceManager::update()
     dataFormatter.formatFootData(rightFoot, formattedRightFoot);
     dataFormatter.formatPostureMetrics(postureMetrics, formattedPostureMetrics);
 
-    String json = jsonSerializer.serialize(formattedLeftFoot, formattedRightFoot, formattedPostureMetrics, postureAnalysis);
+    String json = jsonSerializer.serialize(bleProvisioner.getDeviceId(), formattedLeftFoot, formattedRightFoot, formattedPostureMetrics, postureAnalysis);
     tcpClient.send(json);
 }
 

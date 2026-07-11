@@ -11,6 +11,7 @@ public:
     void begin();
     bool takeConnectionRequest(String &ssid, String &password);
     void setStatus(const String &status);
+    const String &getDeviceId() const;
 
 private:
     bool started;
@@ -19,6 +20,7 @@ private:
     bool connectionRequested;
     NimBLECharacteristic *statusCharacteristic;
     String currentStatus;
+    String deviceId;
 
     String buildDeviceId() const;
     void onWrite(NimBLECharacteristic *characteristic, NimBLEConnInfo &connectionInfo) override;

@@ -8,7 +8,7 @@
 class JsonSerializer
 {
 public:
-    String serialize(const FormattedFootData &leftFoot, const FormattedFootData &rightFoot,
+    String serialize(const String &deviceId, const FormattedFootData &leftFoot, const FormattedFootData &rightFoot,
                      const FormattedPostureMetrics &metrics, const PostureAnalysis &analysis);
 
 private:
