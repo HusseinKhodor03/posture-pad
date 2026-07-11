@@ -1,5 +1,7 @@
 const adcOutput = document.getElementById("adcOutput");
 const voltageOutput = document.getElementById("voltageOutput");
+const DEVICE_ID_STORAGE_KEY = "posturePadDeviceId";
+let selectedDeviceId = localStorage.getItem(DEVICE_ID_STORAGE_KEY);
 const ws = new WebSocket("ws://localhost:8080");
 
 // --------------------------
@@ -121,8 +123,11 @@ connectBleButton.addEventListener("click", async () => {
     );
     await statusCharacteristic.startNotifications();
 
+    selectedDeviceId = decoder.decode(deviceIdValue);
+    localStorage.setItem(DEVICE_ID_STORAGE_KEY, selectedDeviceId);
+
     bleDeviceName.textContent = device.name;
-    bleDeviceId.textContent = decoder.decode(deviceIdValue);
+    bleDeviceId.textContent = selectedDeviceId;
     bleDeviceDetails.hidden = false;
     wifiForm.hidden = false;
     connectWifiButton.disabled = false;
