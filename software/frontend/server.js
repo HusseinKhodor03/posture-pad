@@ -1,4 +1,5 @@
 import express from "express";
+import { createServer } from "http";
 import path from "path";
 import url from "url";
 import { WebSocket, WebSocketServer } from "ws";
@@ -18,26 +19,22 @@ function normalizeDeviceId(deviceId) {
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const server = express();
-const port = 3000;
-const ws_port = 8080;
-const tcp_port = 9000;
+const app = express();
+const httpPort = process.env.PORT || 3000;
+const tcpPort = process.env.TCP_PORT || 9000;
 
-server.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "public")));
 
-server.use((req, res) => {
+app.use((req, res) => {
   res.status(404);
   res.send(`<h1>Error 404: Resource not found!</h1>`);
 });
 
-server.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}/`);
-});
+const httpServer = createServer(app);
+const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
 
-const wss = new WebSocketServer({ port: ws_port });
-
-wss.on("listening", () => {
-  console.log(`WebSocket server running on port ${ws_port}`);
+httpServer.listen(httpPort, "0.0.0.0", () => {
+  console.log(`HTTP and WebSocket server listening on port ${httpPort}`);
 });
 
 wss.on("connection", (ws) => {
@@ -105,6 +102,6 @@ const tcpServer = net.createServer((socket) => {
   socket.on("error", (err) => console.error("TCP socket error:", err));
 });
 
-tcpServer.listen(tcp_port, () => {
-  console.log(`TCP server listening on port ${tcp_port}`);
+tcpServer.listen(tcpPort, "0.0.0.0", () => {
+  console.log(`TCP server listening on port ${tcpPort}`);
 });

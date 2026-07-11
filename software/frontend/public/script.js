@@ -2,7 +2,7 @@ const adcOutput = document.getElementById("adcOutput");
 const voltageOutput = document.getElementById("voltageOutput");
 const DEVICE_ID_STORAGE_KEY = "posturePadDeviceId";
 let selectedDeviceId = localStorage.getItem(DEVICE_ID_STORAGE_KEY);
-const ws = new WebSocket("ws://localhost:8080");
+const ws = new WebSocket("ws://localhost:3000/ws");
 
 function subscribeToSelectedDevice() {
   if (!selectedDeviceId || ws.readyState !== WebSocket.OPEN) return;
