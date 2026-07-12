@@ -1,16 +1,16 @@
-# Backend build artifacts
-backend/.pio/
-backend/.vscode/
-backend/*.elf
-backend/*.bin
-backend/*.hex
-backend/*.a
-backend/*.o
-backend/*.d
-backend/*.gcda
-backend/*.gcno
-backend/*.log
-backend/.env
+# Firmware build artifacts
+firmware/.pio/
+firmware/.vscode/
+firmware/*.elf
+firmware/*.bin
+firmware/*.hex
+firmware/*.a
+firmware/*.o
+firmware/*.d
+firmware/*.gcda
+firmware/*.gcno
+firmware/*.log
+firmware/.env
 
 # Frontend dependencies and outputs
 frontend/node_modules/

@@ -402,8 +402,8 @@ function loadFoot(containerId, svgFile, scale = 15) {
 // --------------------------
 // Load foot SVGs
 // --------------------------
-loadFoot("leftFootContainer", "left.svg", 15);
-loadFoot("rightFootContainer", "right.svg", 15);
+loadFoot("leftFootContainer", "assets/left_foot.svg", 15);
+loadFoot("rightFootContainer", "assets/right_foot.svg", 15);
 
 // --------------------------
 // WebSocket for live sensor data

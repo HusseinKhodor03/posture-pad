@@ -18,6 +18,7 @@ function normalizeDeviceId(deviceId) {
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const publicDir = path.join(__dirname, "..", "frontend", "public");
 
 const app = express();
 const httpPort = process.env.PORT || 3000;
@@ -33,7 +34,7 @@ app.get("/", (req, res, next) => {
   res.redirect(302, frontendUrl);
 });
 
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(publicDir));
 
 app.use((req, res) => {
   res.status(404);
