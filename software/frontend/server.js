@@ -22,6 +22,16 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const httpPort = process.env.PORT || 3000;
 const tcpPort = process.env.TCP_PORT || 9000;
+const frontendUrl = process.env.FRONTEND_URL;
+
+app.get("/", (req, res, next) => {
+  if (!frontendUrl) {
+    next();
+    return;
+  }
+
+  res.redirect(302, frontendUrl);
+});
 
 app.use(express.static(path.join(__dirname, "public")));
 
