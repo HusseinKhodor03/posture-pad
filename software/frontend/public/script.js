@@ -1,8 +1,13 @@
 const adcOutput = document.getElementById("adcOutput");
 const voltageOutput = document.getElementById("voltageOutput");
 const DEVICE_ID_STORAGE_KEY = "posturePadDeviceId";
+const RAILWAY_WEBSOCKET_URL =
+  "wss://posture-pad-production.up.railway.app/ws";
 let selectedDeviceId = localStorage.getItem(DEVICE_ID_STORAGE_KEY);
-const ws = new WebSocket("ws://localhost:3000/ws");
+const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const ws = new WebSocket(
+  isLocal ? "ws://localhost:3000/ws" : RAILWAY_WEBSOCKET_URL,
+);
 
 function subscribeToSelectedDevice() {
   if (!selectedDeviceId || ws.readyState !== WebSocket.OPEN) return;

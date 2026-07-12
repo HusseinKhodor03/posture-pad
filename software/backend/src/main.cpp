@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include "device/DeviceManager.h"
 
-const char *host = "SERVER_IP";
-const int port = 9000;
+const char *host = "tokaido.proxy.rlwy.net";
+const int port = 45762;
 
 DeviceManager deviceManager(host, port);
 
