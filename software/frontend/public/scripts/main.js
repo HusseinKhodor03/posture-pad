@@ -1,8 +1,24 @@
+import {
+  DEVICE_ID_STORAGE_KEY,
+  RAILWAY_WEBSOCKET_URL,
+} from "./config/constants.js";
+import {
+  BLE_SERVICE_UUID,
+  DEVICE_ID_UUID,
+  WIFI_SSID_UUID,
+  WIFI_PASSWORD_UUID,
+  COMMAND_UUID,
+  STATUS_UUID,
+} from "./config/constants.js";
+import { LEFT_FOOT_SVG, RIGHT_FOOT_SVG } from "./config/constants.js";
+import {
+  leftSensorConfig,
+  rightSensorConfig,
+  pressureGradient,
+} from "./config/constants.js";
+
 const adcOutput = document.getElementById("adcOutput");
 const voltageOutput = document.getElementById("voltageOutput");
-const DEVICE_ID_STORAGE_KEY = "posturePadDeviceId";
-const RAILWAY_WEBSOCKET_URL =
-  "wss://posture-pad-production.up.railway.app/ws";
 let selectedDeviceId = localStorage.getItem(DEVICE_ID_STORAGE_KEY);
 const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
 const ws = new WebSocket(
@@ -47,16 +63,6 @@ function activateTab(selectedTab) {
 tabs.forEach((tab) => {
   tab.button.addEventListener("click", () => activateTab(tab));
 });
-
-// --------------------------
-// Bluetooth device connection
-// --------------------------
-const BLE_SERVICE_UUID = "e1a87d62-5df4-42f4-9cf9-fe3b312a8d85";
-const DEVICE_ID_UUID = "31c794a4-7189-4023-beb7-f908f31e6224";
-const WIFI_SSID_UUID = "426b1b2a-c11b-49c2-9053-1ba2afc1f6c1";
-const WIFI_PASSWORD_UUID = "ff386352-081f-4803-b256-c0fba4085d2d";
-const COMMAND_UUID = "1d831e2f-0ca5-4bf4-9f84-39487ad6b635";
-const STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
 
 const connectBleButton = document.getElementById("connectBleButton");
 const bleStatus = document.getElementById("bleStatus");
@@ -123,10 +129,8 @@ connectBleButton.addEventListener("click", async () => {
     const service = await server.getPrimaryService(BLE_SERVICE_UUID);
     const deviceIdCharacteristic =
       await service.getCharacteristic(DEVICE_ID_UUID);
-    const statusCharacteristic =
-      await service.getCharacteristic(STATUS_UUID);
-    wifiSsidCharacteristic =
-      await service.getCharacteristic(WIFI_SSID_UUID);
+    const statusCharacteristic = await service.getCharacteristic(STATUS_UUID);
+    wifiSsidCharacteristic = await service.getCharacteristic(WIFI_SSID_UUID);
     wifiPasswordCharacteristic =
       await service.getCharacteristic(WIFI_PASSWORD_UUID);
     commandCharacteristic = await service.getCharacteristic(COMMAND_UUID);
@@ -198,44 +202,6 @@ connectWifiButton.addEventListener("click", async () => {
     connectWifiButton.textContent = "Connect to Wi-Fi";
   }
 });
-
-// --------------------------
-// Sensor configurations
-// --------------------------
-const rightSensorConfig = {
-  sensor0: { x: 0.26, y: 0.1, type: "circular" }, // big toe
-  sensor1: { x: 0.45, y: 0.14, type: "circular" },
-  sensor2: { x: 0.63, y: 0.18, type: "circular" },
-  sensor3: { x: 0.81, y: 0.22, type: "circular" }, // pinky toe
-  sensor4: { x: 0.3, y: 0.38, type: "square" }, // midfoot left
-  sensor5: { x: 0.8, y: 0.38, type: "square" }, // midfoot right
-  sensor6: { x: 0.27, y: 0.613, type: "square" }, // lower left
-  sensor7: { x: 0.77, y: 0.613, type: "square" }, // lower right
-  sensor8: { x: 0.51, y: 0.85, type: "square" }, // heel
-};
-
-const leftSensorConfig = {
-  sensor0: { x: 0.74, y: 0.1, type: "circular" }, // big toe
-  sensor1: { x: 0.55, y: 0.14, type: "circular" },
-  sensor2: { x: 0.37, y: 0.18, type: "circular" },
-  sensor3: { x: 0.19, y: 0.22, type: "circular" }, // pinky toe
-  sensor4: { x: 0.2, y: 0.38, type: "square" }, // midfoot left
-  sensor5: { x: 0.7, y: 0.38, type: "square" }, // midfoot right
-  sensor6: { x: 0.23, y: 0.613, type: "square" }, // lower left
-  sensor7: { x: 0.73, y: 0.613, type: "square" }, // lower right
-  sensor8: { x: 0.49, y: 0.85, type: "square" }, // heel
-};
-
-// --------------------------
-// Pressure gradient colors
-// --------------------------
-const pressureGradient = [
-  { value: 0.0, color: [255, 243, 59] },
-  { value: 0.25, color: [253, 199, 12] },
-  { value: 0.5, color: [243, 144, 63] },
-  { value: 0.75, color: [237, 104, 60] },
-  { value: 1.0, color: [233, 62, 58] },
-];
 
 // --------------------------
 // Sensor data and blob shapes
@@ -402,8 +368,8 @@ function loadFoot(containerId, svgFile, scale = 15) {
 // --------------------------
 // Load foot SVGs
 // --------------------------
-loadFoot("leftFootContainer", "assets/left_foot.svg", 15);
-loadFoot("rightFootContainer", "assets/right_foot.svg", 15);
+loadFoot("leftFootContainer", LEFT_FOOT_SVG, 15);
+loadFoot("rightFootContainer", RIGHT_FOOT_SVG, 15);
 
 // --------------------------
 // WebSocket for live sensor data
