@@ -1,5 +1,4 @@
 import {
-  DEVICE_ID_STORAGE_KEY,
   RAILWAY_WEBSOCKET_URL,
 } from "./config/constants.js";
 import {
@@ -16,10 +15,14 @@ import {
   rightSensorConfig,
   pressureGradient,
 } from "./config/constants.js";
+import {
+  loadSelectedDeviceId,
+  rememberSelectedDeviceId,
+} from "./device/device-store.js";
 
 const adcOutput = document.getElementById("adcOutput");
 const voltageOutput = document.getElementById("voltageOutput");
-let selectedDeviceId = localStorage.getItem(DEVICE_ID_STORAGE_KEY);
+let selectedDeviceId = loadSelectedDeviceId();
 const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
 const ws = new WebSocket(
   isLocal ? "ws://localhost:3000/ws" : RAILWAY_WEBSOCKET_URL,
@@ -146,7 +149,7 @@ connectBleButton.addEventListener("click", async () => {
     await statusCharacteristic.startNotifications();
 
     selectedDeviceId = decoder.decode(deviceIdValue);
-    localStorage.setItem(DEVICE_ID_STORAGE_KEY, selectedDeviceId);
+    rememberSelectedDeviceId(selectedDeviceId);
     subscribeToSelectedDevice();
 
     bleDeviceName.textContent = device.name;
