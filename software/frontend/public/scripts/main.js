@@ -19,6 +19,7 @@ import {
   loadSelectedDeviceId,
   rememberSelectedDeviceId,
 } from "./device/device-store.js";
+import { initTabs } from "./ui/tab-controller.js";
 
 const adcOutput = document.getElementById("adcOutput");
 const voltageOutput = document.getElementById("voltageOutput");
@@ -41,31 +42,7 @@ function subscribeToSelectedDevice() {
 
 ws.addEventListener("open", subscribeToSelectedDevice);
 
-// --------------------------
-// Dashboard/config tabs
-// --------------------------
-const tabs = [
-  {
-    button: document.getElementById("dashboardTab"),
-    panel: document.getElementById("dashboardPanel"),
-  },
-  {
-    button: document.getElementById("configTab"),
-    panel: document.getElementById("configPanel"),
-  },
-];
-
-function activateTab(selectedTab) {
-  tabs.forEach((tab) => {
-    const isSelected = tab === selectedTab;
-    tab.button.classList.toggle("active", isSelected);
-    tab.panel.hidden = !isSelected;
-  });
-}
-
-tabs.forEach((tab) => {
-  tab.button.addEventListener("click", () => activateTab(tab));
-});
+initTabs();
 
 const connectBleButton = document.getElementById("connectBleButton");
 const bleStatus = document.getElementById("bleStatus");
