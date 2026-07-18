@@ -1,7 +1,4 @@
 import {
-  RAILWAY_WEBSOCKET_URL,
-} from "./config/constants.js";
-import {
   BLE_SERVICE_UUID,
   DEVICE_ID_UUID,
   WIFI_SSID_UUID,
@@ -20,27 +17,11 @@ import {
   rememberSelectedDeviceId,
 } from "./device/device-store.js";
 import { initTabs } from "./ui/tab-controller.js";
+import { DashboardWebSocket } from "./network/dashboard-web-socket.js";
 
 const adcOutput = document.getElementById("adcOutput");
 const voltageOutput = document.getElementById("voltageOutput");
 let selectedDeviceId = loadSelectedDeviceId();
-const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-const ws = new WebSocket(
-  isLocal ? "ws://localhost:3000/ws" : RAILWAY_WEBSOCKET_URL,
-);
-
-function subscribeToSelectedDevice() {
-  if (!selectedDeviceId || ws.readyState !== WebSocket.OPEN) return;
-
-  ws.send(
-    JSON.stringify({
-      type: "subscribe",
-      device_id: selectedDeviceId,
-    }),
-  );
-}
-
-ws.addEventListener("open", subscribeToSelectedDevice);
 
 initTabs();
 
@@ -127,7 +108,7 @@ connectBleButton.addEventListener("click", async () => {
 
     selectedDeviceId = decoder.decode(deviceIdValue);
     rememberSelectedDeviceId(selectedDeviceId);
-    subscribeToSelectedDevice();
+    dashboardWebSocket.subscribeToDevice(selectedDeviceId);
 
     bleDeviceName.textContent = device.name;
     bleDeviceId.textContent = selectedDeviceId;
@@ -351,12 +332,7 @@ function loadFoot(containerId, svgFile, scale = 15) {
 loadFoot("leftFootContainer", LEFT_FOOT_SVG, 15);
 loadFoot("rightFootContainer", RIGHT_FOOT_SVG, 15);
 
-// --------------------------
-// WebSocket for live sensor data
-// --------------------------
-ws.addEventListener("message", (event) => {
-  const data = JSON.parse(event.data);
-
+function updateDashboard(data) {
   Object.keys(data.left_foot.sensors).forEach((key) => {
     leftSensorData[key] = data.left_foot.sensors[key].normalized;
   });
@@ -406,7 +382,14 @@ ws.addEventListener("message", (event) => {
     `Medial: ${data.right_foot.metrics.medial_pressure}`;
   document.getElementById("rightLateral").innerText =
     `Lateral: ${data.right_foot.metrics.lateral_pressure}`;
-});
+}
+
+// --------------------------
+// WebSocket for live sensor data
+// --------------------------
+const dashboardWebSocket = new DashboardWebSocket(updateDashboard);
+dashboardWebSocket.subscribeToDevice(selectedDeviceId);
+dashboardWebSocket.connect();
 
 // --------------------------
 // Animation loop
