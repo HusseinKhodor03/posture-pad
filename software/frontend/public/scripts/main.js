@@ -19,18 +19,29 @@ function main() {
 
   initTabs();
 
-  const { leftHeatmap, rightHeatmap } = createHeatmaps();
+  const leftHeatmap = new HeatmapRenderer({
+    containerId: "leftFootContainer",
+    svgFile: LEFT_FOOT_SVG,
+    sensorConfig: leftSensorConfig,
+    pressureGradient,
+  });
+  const rightHeatmap = new HeatmapRenderer({
+    containerId: "rightFootContainer",
+    svgFile: RIGHT_FOOT_SVG,
+    sensorConfig: rightSensorConfig,
+    pressureGradient,
+  });
+
   leftHeatmap.init();
   rightHeatmap.init();
 
-  const dashboardWebSocket = createDashboardWebSocket({
-    selectedDeviceId,
-    onSensorData: (data) => {
-      leftHeatmap.updateSensorData(data.left_foot.sensors);
-      rightHeatmap.updateSensorData(data.right_foot.sensors);
-      updateDashboardMetrics(data);
-    },
+  const dashboardWebSocket = new DashboardWebSocket((data) => {
+    leftHeatmap.updateSensorData(data.left_foot.sensors);
+    rightHeatmap.updateSensorData(data.right_foot.sensors);
+    updateDashboardMetrics(data);
   });
+  dashboardWebSocket.subscribeToDevice(selectedDeviceId);
+  dashboardWebSocket.connect();
 
   const bleProvisioner = new BleProvisioner({
     onDeviceConnected: (deviceId) => {
@@ -41,37 +52,13 @@ function main() {
   });
   bleProvisioner.init();
 
-  function updateHeatmaps() {
+  const drawHeatmaps = () => {
     leftHeatmap.draw();
     rightHeatmap.draw();
-    requestAnimationFrame(updateHeatmaps);
-  }
-
-  updateHeatmaps();
-}
-
-function createHeatmaps() {
-  return {
-    leftHeatmap: new HeatmapRenderer({
-      containerId: "leftFootContainer",
-      svgFile: LEFT_FOOT_SVG,
-      sensorConfig: leftSensorConfig,
-      pressureGradient,
-    }),
-    rightHeatmap: new HeatmapRenderer({
-      containerId: "rightFootContainer",
-      svgFile: RIGHT_FOOT_SVG,
-      sensorConfig: rightSensorConfig,
-      pressureGradient,
-    }),
+    requestAnimationFrame(drawHeatmaps);
   };
-}
 
-function createDashboardWebSocket({ selectedDeviceId, onSensorData }) {
-  const dashboardWebSocket = new DashboardWebSocket(onSensorData);
-  dashboardWebSocket.subscribeToDevice(selectedDeviceId);
-  dashboardWebSocket.connect();
-  return dashboardWebSocket;
+  drawHeatmaps();
 }
 
 main();
