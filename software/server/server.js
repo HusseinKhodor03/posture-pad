@@ -2,9 +2,9 @@ import express from "express";
 import { createServer } from "http";
 import path from "path";
 import url from "url";
-import { WebSocket, WebSocketServer } from "ws";
 import net from "net";
 import { normalizeDeviceId } from "./src/device/device-id.js";
+import { WebSocketHub } from "./src/network/web-socket-hub.js";
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,34 +32,11 @@ app.use((req, res) => {
 });
 
 const httpServer = createServer(app);
-const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
+const webSocketHub = new WebSocketHub(httpServer);
+webSocketHub.init();
 
 httpServer.listen(httpPort, "0.0.0.0", () => {
   console.log(`HTTP and WebSocket server listening on port ${httpPort}`);
-});
-
-wss.on("connection", (ws) => {
-  ws.subscribedDeviceId = null;
-
-  ws.on("error", (error) => {
-    console.error(error);
-  });
-
-  ws.on("message", (data) => {
-    try {
-      const message = JSON.parse(data.toString());
-      const deviceId = normalizeDeviceId(message?.device_id);
-
-      if (message.type !== "subscribe" || !deviceId) {
-        return;
-      }
-
-      ws.subscribedDeviceId = deviceId;
-      console.log(`Dashboard subscribed to device ${deviceId}`);
-    } catch (error) {
-      console.error("Invalid WebSocket message:", error);
-    }
-  });
 });
 
 const tcpServer = net.createServer((socket) => {
@@ -81,14 +58,7 @@ const tcpServer = net.createServer((socket) => {
           const deviceId = normalizeDeviceId(sensorData?.device_id);
 
           if (deviceId) {
-            wss.clients.forEach((client) => {
-              if (
-                client.readyState === WebSocket.OPEN &&
-                client.subscribedDeviceId === deviceId
-              ) {
-                client.send(line);
-              }
-            });
+            webSocketHub.broadcastSensorData(deviceId, line);
           }
         } catch (error) {
           console.error("Invalid sensor data:", error);
