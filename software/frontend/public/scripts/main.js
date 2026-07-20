@@ -1,5 +1,6 @@
-import { LEFT_FOOT_SVG, RIGHT_FOOT_SVG } from "./config/constants.js";
 import {
+  LEFT_FOOT_SVG,
+  RIGHT_FOOT_SVG,
   leftSensorConfig,
   rightSensorConfig,
   pressureGradient,

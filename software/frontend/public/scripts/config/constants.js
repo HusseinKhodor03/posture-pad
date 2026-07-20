@@ -1,4 +1,5 @@
 export const DEVICE_ID_STORAGE_KEY = "posturePadDeviceId";
+export const LOCAL_WEBSOCKET_URL = "ws://localhost:3000/ws";
 export const RAILWAY_WEBSOCKET_URL =
   "wss://posture-pad-production.up.railway.app/ws";
 

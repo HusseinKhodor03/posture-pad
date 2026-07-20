@@ -1,4 +1,7 @@
-import { RAILWAY_WEBSOCKET_URL } from "../config/constants.js";
+import {
+  LOCAL_WEBSOCKET_URL,
+  RAILWAY_WEBSOCKET_URL,
+} from "../config/constants.js";
 
 export class DashboardWebSocket {
   constructor(onSensorData) {
@@ -11,7 +14,7 @@ export class DashboardWebSocket {
     const isLocal = ["localhost", "127.0.0.1"].includes(
       window.location.hostname,
     );
-    const url = isLocal ? "ws://localhost:3000/ws" : RAILWAY_WEBSOCKET_URL;
+    const url = isLocal ? LOCAL_WEBSOCKET_URL : RAILWAY_WEBSOCKET_URL;
 
     this.ws = new WebSocket(url);
 

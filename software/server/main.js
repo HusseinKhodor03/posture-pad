@@ -16,12 +16,12 @@ function main() {
   const __dirname = path.dirname(__filename);
   const publicDir = path.join(__dirname, ...FRONTEND_PUBLIC_PATH);
 
-  const app = createServerApp({
+  const serverApp = createServerApp({
     publicDir,
     frontendUrl: FRONTEND_URL,
   });
 
-  const httpServer = createServer(app);
+  const httpServer = createServer(serverApp);
   const webSocketHub = new WebSocketHub(httpServer);
   webSocketHub.init();
 
