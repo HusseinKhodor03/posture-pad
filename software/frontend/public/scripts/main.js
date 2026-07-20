@@ -14,12 +14,13 @@ import { HeatmapRenderer } from "./ui/heatmap-renderer.js";
 import { BleProvisioner } from "./network/ble-provisioner.js";
 import { DashboardWebSocket } from "./network/dashboard-web-socket.js";
 
-const adcOutput = document.getElementById("adcOutput");
-const voltageOutput = document.getElementById("voltageOutput");
 let selectedDeviceId = loadSelectedDeviceId();
 
 initTabs();
 
+// --------------------------
+// Heatmaps
+// --------------------------
 const leftHeatmap = new HeatmapRenderer({
   containerId: "leftFootContainer",
   svgFile: LEFT_FOOT_SVG,
@@ -50,6 +51,9 @@ const dashboardWebSocket = new DashboardWebSocket(updateDashboard);
 dashboardWebSocket.subscribeToDevice(selectedDeviceId);
 dashboardWebSocket.connect();
 
+// --------------------------
+// Bluetooth provisioning
+// --------------------------
 const bleProvisioner = new BleProvisioner({
   onDeviceConnected: (deviceId) => {
     selectedDeviceId = deviceId;
