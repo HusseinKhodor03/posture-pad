@@ -4,17 +4,7 @@ import path from "path";
 import url from "url";
 import { WebSocket, WebSocketServer } from "ws";
 import net from "net";
-
-const DEVICE_ID_PATTERN = /^[0-9A-F]{12}$/;
-
-function normalizeDeviceId(deviceId) {
-  if (typeof deviceId !== "string") return null;
-
-  const normalizedDeviceId = deviceId.toUpperCase();
-  return DEVICE_ID_PATTERN.test(normalizedDeviceId)
-    ? normalizedDeviceId
-    : null;
-}
+import { normalizeDeviceId } from "./src/device/device-id.js";
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
