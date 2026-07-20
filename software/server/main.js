@@ -2,15 +2,20 @@ import { createServer } from "http";
 import path from "path";
 import url from "url";
 import { createServerApp } from "./src/app/server-app.js";
+import {
+  DEFAULT_HTTP_PORT,
+  DEFAULT_TCP_PORT,
+  FRONTEND_PUBLIC_PATH,
+} from "./src/config/constants.js";
 import { TcpSensorServer } from "./src/network/tcp-sensor-server.js";
 import { WebSocketHub } from "./src/network/web-socket-hub.js";
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const publicDir = path.join(__dirname, "..", "frontend", "public");
+const publicDir = path.join(__dirname, ...FRONTEND_PUBLIC_PATH);
 
-const httpPort = process.env.PORT || 3000;
-const tcpPort = process.env.TCP_PORT || 9000;
+const httpPort = process.env.PORT || DEFAULT_HTTP_PORT;
+const tcpPort = process.env.TCP_PORT || DEFAULT_TCP_PORT;
 const frontendUrl = process.env.FRONTEND_URL;
 
 const app = createServerApp({
