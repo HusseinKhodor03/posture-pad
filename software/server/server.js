@@ -2,8 +2,7 @@ import express from "express";
 import { createServer } from "http";
 import path from "path";
 import url from "url";
-import net from "net";
-import { normalizeDeviceId } from "./src/device/device-id.js";
+import { TcpSensorServer } from "./src/network/tcp-sensor-server.js";
 import { WebSocketHub } from "./src/network/web-socket-hub.js";
 
 const __filename = url.fileURLToPath(import.meta.url);
@@ -39,40 +38,10 @@ httpServer.listen(httpPort, "0.0.0.0", () => {
   console.log(`HTTP and WebSocket server listening on port ${httpPort}`);
 });
 
-const tcpServer = net.createServer((socket) => {
-  console.log("ESP32 connected!");
-
-  let buffer = "";
-
-  socket.on("data", (chunk) => {
-    buffer += chunk.toString();
-
-    let boundary = buffer.indexOf("\n");
-    while (boundary !== -1) {
-      const line = buffer.slice(0, boundary).trim();
-      buffer = buffer.slice(boundary + 1);
-
-      if (line) {
-        try {
-          const sensorData = JSON.parse(line);
-          const deviceId = normalizeDeviceId(sensorData?.device_id);
-
-          if (deviceId) {
-            webSocketHub.broadcastSensorData(deviceId, line);
-          }
-        } catch (error) {
-          console.error("Invalid sensor data:", error);
-        }
-      }
-
-      boundary = buffer.indexOf("\n");
-    }
-  });
-
-  socket.on("close", () => console.log("ESP32 disconnected"));
-  socket.on("error", (err) => console.error("TCP socket error:", err));
+const tcpSensorServer = new TcpSensorServer({
+  port: tcpPort,
+  onSensorData: (deviceId, sensorData) => {
+    webSocketHub.broadcastSensorData(deviceId, sensorData);
+  },
 });
-
-tcpServer.listen(tcpPort, "0.0.0.0", () => {
-  console.log(`TCP server listening on port ${tcpPort}`);
-});
+tcpSensorServer.listen();
