@@ -1,9 +1,9 @@
 import {
   LEFT_FOOT_SVG,
+  LEFT_SENSOR_CONFIG,
+  PRESSURE_GRADIENT,
   RIGHT_FOOT_SVG,
-  leftSensorConfig,
-  rightSensorConfig,
-  pressureGradient,
+  RIGHT_SENSOR_CONFIG,
 } from "./config/constants.js";
 import {
   loadSelectedDeviceId,
@@ -23,14 +23,14 @@ function main() {
   const leftHeatmap = new HeatmapRenderer({
     containerId: "leftFootContainer",
     svgFile: LEFT_FOOT_SVG,
-    sensorConfig: leftSensorConfig,
-    pressureGradient,
+    sensorConfig: LEFT_SENSOR_CONFIG,
+    pressureGradient: PRESSURE_GRADIENT,
   });
   const rightHeatmap = new HeatmapRenderer({
     containerId: "rightFootContainer",
     svgFile: RIGHT_FOOT_SVG,
-    sensorConfig: rightSensorConfig,
-    pressureGradient,
+    sensorConfig: RIGHT_SENSOR_CONFIG,
+    pressureGradient: PRESSURE_GRADIENT,
   });
 
   leftHeatmap.init();

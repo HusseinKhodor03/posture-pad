@@ -13,7 +13,7 @@ export const STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
 export const LEFT_FOOT_SVG = "assets/left_foot.svg";
 export const RIGHT_FOOT_SVG = "assets/right_foot.svg";
 
-export const leftSensorConfig = {
+export const LEFT_SENSOR_CONFIG = {
   sensor0: { x: 0.74, y: 0.1, type: "circular" }, // big toe
   sensor1: { x: 0.55, y: 0.14, type: "circular" },
   sensor2: { x: 0.37, y: 0.18, type: "circular" },
@@ -25,7 +25,7 @@ export const leftSensorConfig = {
   sensor8: { x: 0.49, y: 0.85, type: "square" }, // heel
 };
 
-export const rightSensorConfig = {
+export const RIGHT_SENSOR_CONFIG = {
   sensor0: { x: 0.26, y: 0.1, type: "circular" }, // big toe
   sensor1: { x: 0.45, y: 0.14, type: "circular" },
   sensor2: { x: 0.63, y: 0.18, type: "circular" },
@@ -37,7 +37,7 @@ export const rightSensorConfig = {
   sensor8: { x: 0.51, y: 0.85, type: "square" }, // heel
 };
 
-export const pressureGradient = [
+export const PRESSURE_GRADIENT = [
   { value: 0.0, color: [255, 243, 59] },
   { value: 0.25, color: [253, 199, 12] },
   { value: 0.5, color: [243, 144, 63] },
