@@ -18,6 +18,7 @@ import {
 } from "./device/device-store.js";
 import { initTabs } from "./ui/tab-controller.js";
 import { updateDashboardMetrics } from "./ui/dashboard-view.js";
+import { HeatmapRenderer } from "./ui/heatmap-renderer.js";
 import { DashboardWebSocket } from "./network/dashboard-web-socket.js";
 
 const adcOutput = document.getElementById("adcOutput");
@@ -25,6 +26,23 @@ const voltageOutput = document.getElementById("voltageOutput");
 let selectedDeviceId = loadSelectedDeviceId();
 
 initTabs();
+
+const leftHeatmap = new HeatmapRenderer({
+  containerId: "leftFootContainer",
+  svgFile: LEFT_FOOT_SVG,
+  sensorConfig: leftSensorConfig,
+  pressureGradient,
+});
+
+const rightHeatmap = new HeatmapRenderer({
+  containerId: "rightFootContainer",
+  svgFile: RIGHT_FOOT_SVG,
+  sensorConfig: rightSensorConfig,
+  pressureGradient,
+});
+
+leftHeatmap.init();
+rightHeatmap.init();
 
 const connectBleButton = document.getElementById("connectBleButton");
 const bleStatus = document.getElementById("bleStatus");
@@ -165,183 +183,9 @@ connectWifiButton.addEventListener("click", async () => {
   }
 });
 
-// --------------------------
-// Sensor data and blob shapes
-// --------------------------
-const leftBlobShapes = {};
-const rightBlobShapes = {};
-let leftSensorData = {};
-let rightSensorData = {};
-
-function generateBlobShape(sensorType) {
-  const baseSize = sensorType === "square" ? 0.38 : 0.16;
-  return { sensorType, baseSize };
-}
-
-// Initialize sensor data and blob shapes
-Object.keys(leftSensorConfig).forEach((key) => {
-  leftSensorData[key] = 0;
-  leftBlobShapes[key] = generateBlobShape(leftSensorConfig[key].type);
-});
-
-Object.keys(rightSensorConfig).forEach((key) => {
-  rightSensorData[key] = 0;
-  rightBlobShapes[key] = generateBlobShape(rightSensorConfig[key].type);
-});
-
-// --------------------------
-// Foot loading and canvas drawing
-// --------------------------
-function loadFoot(containerId, svgFile, scale = 15) {
-  fetch(svgFile)
-    .then((res) => res.text())
-    .then((svgText) => {
-      const container = document.getElementById(containerId);
-      container.innerHTML = svgText;
-
-      const svg = container.querySelector("svg");
-      const path = svg.querySelector("path");
-      if (!path) return;
-
-      const strokeWidth = 0.4;
-      path.setAttribute("fill", "none");
-      path.setAttribute("stroke", "#000");
-      path.setAttribute("stroke-width", strokeWidth);
-
-      const bbox = path.getBBox();
-      const padding = strokeWidth;
-
-      const canvasWidth = (bbox.width + padding * 2) * scale;
-      const canvasHeight = (bbox.height + padding * 2) * scale;
-
-      svg.setAttribute(
-        "viewBox",
-        `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${
-          bbox.height + padding * 2
-        }`,
-      );
-      svg.setAttribute("width", canvasWidth);
-      svg.setAttribute("height", canvasHeight);
-
-      const canvas = document.createElement("canvas");
-      canvas.width = canvasWidth;
-      canvas.height = canvasHeight;
-      canvas.style.position = "absolute";
-      canvas.style.left = "0";
-      canvas.style.top = "0";
-      container.style.position = "relative";
-      container.appendChild(canvas);
-
-      const ctx = canvas.getContext("2d");
-
-      // --------------------------
-      // Helper functions
-      // --------------------------
-      function getColorForPressure(pressure) {
-        for (let i = 0; i < pressureGradient.length - 1; i++) {
-          const current = pressureGradient[i];
-          const next = pressureGradient[i + 1];
-          if (pressure >= current.value && pressure <= next.value) {
-            const t = (pressure - current.value) / (next.value - current.value);
-            return current.color.map((c, idx) =>
-              Math.round(c + (next.color[idx] - c) * t),
-            );
-          }
-        }
-        return [255, 243, 59];
-      }
-
-      function drawOrganicBlobCanvas(ctx, x, y, shape, pressure) {
-        if (pressure <= 0.01) return;
-
-        const [r, g, b] = getColorForPressure(pressure);
-        const size = shape.baseSize * 1.3 * bbox.width;
-
-        ctx.save();
-        ctx.translate(x, y);
-
-        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
-        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 1.0)`);
-        gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.95)`);
-        gradient.addColorStop(0.8, `rgba(${r}, ${g}, ${b}, 0.85)`);
-        gradient.addColorStop(0.95, `rgba(${r}, ${g}, ${b}, 0.6)`);
-        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-        ctx.fillStyle = gradient;
-
-        if (shape.sensorType === "square") {
-          ctx.fillRect(-size / 2, -size / 2, size, size);
-        } else {
-          ctx.beginPath();
-          ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        ctx.restore();
-      }
-
-      function drawHeatmap(sensorData, blobShapes, cfg) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        ctx.save();
-        ctx.scale(scale, scale);
-        ctx.translate(-bbox.x + padding, -bbox.y + padding);
-        const clipPath = new Path2D(path.getAttribute("d"));
-        ctx.clip(clipPath);
-        ctx.globalCompositeOperation = "screen";
-
-        Object.keys(cfg).forEach((key) => {
-          const sensor = cfg[key];
-          const pressure = sensorData[key] || 0;
-          const cx = bbox.x + bbox.width * sensor.x;
-          const cy = bbox.y + bbox.height * sensor.y;
-          drawOrganicBlobCanvas(ctx, cx, cy, blobShapes[key], pressure);
-        });
-
-        ctx.restore();
-
-        // Draw outline
-        ctx.save();
-        ctx.scale(scale, scale);
-        ctx.translate(-bbox.x + padding, -bbox.y + padding);
-        ctx.strokeStyle = path.getAttribute("stroke");
-        ctx.lineWidth = strokeWidth;
-        ctx.stroke(new Path2D(path.getAttribute("d")));
-        ctx.restore();
-      }
-
-      container.drawHeatmap = (sensorData) => {
-        const cfg =
-          containerId === "leftFootContainer"
-            ? leftSensorConfig
-            : rightSensorConfig;
-        const blobShapes =
-          containerId === "leftFootContainer"
-            ? leftBlobShapes
-            : rightBlobShapes;
-        drawHeatmap(sensorData, blobShapes, cfg);
-      };
-
-      container.drawHeatmap(
-        containerId === "leftFootContainer" ? leftSensorData : rightSensorData,
-      );
-    });
-}
-
-// --------------------------
-// Load foot SVGs
-// --------------------------
-loadFoot("leftFootContainer", LEFT_FOOT_SVG, 15);
-loadFoot("rightFootContainer", RIGHT_FOOT_SVG, 15);
-
 function updateDashboard(data) {
-  Object.keys(data.left_foot.sensors).forEach((key) => {
-    leftSensorData[key] = data.left_foot.sensors[key].normalized;
-  });
-
-  Object.keys(data.right_foot.sensors).forEach((key) => {
-    rightSensorData[key] = data.right_foot.sensors[key].normalized;
-  });
-
+  leftHeatmap.updateSensorData(data.left_foot.sensors);
+  rightHeatmap.updateSensorData(data.right_foot.sensors);
   updateDashboardMetrics(data);
 }
 
@@ -356,14 +200,8 @@ dashboardWebSocket.connect();
 // Animation loop
 // --------------------------
 function updateHeatmaps() {
-  const leftContainer = document.getElementById("leftFootContainer");
-  const rightContainer = document.getElementById("rightFootContainer");
-
-  if (leftContainer && leftContainer.drawHeatmap)
-    leftContainer.drawHeatmap(leftSensorData);
-  if (rightContainer && rightContainer.drawHeatmap)
-    rightContainer.drawHeatmap(rightSensorData);
-
+  leftHeatmap.draw();
+  rightHeatmap.draw();
   requestAnimationFrame(updateHeatmaps);
 }
 
