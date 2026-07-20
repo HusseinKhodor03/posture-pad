@@ -14,62 +14,64 @@ import { HeatmapRenderer } from "./ui/heatmap-renderer.js";
 import { BleProvisioner } from "./network/ble-provisioner.js";
 import { DashboardWebSocket } from "./network/dashboard-web-socket.js";
 
-let selectedDeviceId = loadSelectedDeviceId();
+function main() {
+  let selectedDeviceId = loadSelectedDeviceId();
 
-initTabs();
+  initTabs();
 
-// --------------------------
-// Heatmaps
-// --------------------------
-const leftHeatmap = new HeatmapRenderer({
-  containerId: "leftFootContainer",
-  svgFile: LEFT_FOOT_SVG,
-  sensorConfig: leftSensorConfig,
-  pressureGradient,
-});
+  const { leftHeatmap, rightHeatmap } = createHeatmaps();
+  leftHeatmap.init();
+  rightHeatmap.init();
 
-const rightHeatmap = new HeatmapRenderer({
-  containerId: "rightFootContainer",
-  svgFile: RIGHT_FOOT_SVG,
-  sensorConfig: rightSensorConfig,
-  pressureGradient,
-});
+  const dashboardWebSocket = createDashboardWebSocket({
+    selectedDeviceId,
+    onSensorData: (data) => {
+      leftHeatmap.updateSensorData(data.left_foot.sensors);
+      rightHeatmap.updateSensorData(data.right_foot.sensors);
+      updateDashboardMetrics(data);
+    },
+  });
 
-leftHeatmap.init();
-rightHeatmap.init();
+  const bleProvisioner = new BleProvisioner({
+    onDeviceConnected: (deviceId) => {
+      selectedDeviceId = deviceId;
+      rememberSelectedDeviceId(selectedDeviceId);
+      dashboardWebSocket.subscribeToDevice(selectedDeviceId);
+    },
+  });
+  bleProvisioner.init();
 
-function updateDashboard(data) {
-  leftHeatmap.updateSensorData(data.left_foot.sensors);
-  rightHeatmap.updateSensorData(data.right_foot.sensors);
-  updateDashboardMetrics(data);
+  function updateHeatmaps() {
+    leftHeatmap.draw();
+    rightHeatmap.draw();
+    requestAnimationFrame(updateHeatmaps);
+  }
+
+  updateHeatmaps();
 }
 
-// --------------------------
-// WebSocket for live sensor data
-// --------------------------
-const dashboardWebSocket = new DashboardWebSocket(updateDashboard);
-dashboardWebSocket.subscribeToDevice(selectedDeviceId);
-dashboardWebSocket.connect();
-
-// --------------------------
-// Bluetooth provisioning
-// --------------------------
-const bleProvisioner = new BleProvisioner({
-  onDeviceConnected: (deviceId) => {
-    selectedDeviceId = deviceId;
-    rememberSelectedDeviceId(selectedDeviceId);
-    dashboardWebSocket.subscribeToDevice(selectedDeviceId);
-  },
-});
-bleProvisioner.init();
-
-// --------------------------
-// Animation loop
-// --------------------------
-function updateHeatmaps() {
-  leftHeatmap.draw();
-  rightHeatmap.draw();
-  requestAnimationFrame(updateHeatmaps);
+function createHeatmaps() {
+  return {
+    leftHeatmap: new HeatmapRenderer({
+      containerId: "leftFootContainer",
+      svgFile: LEFT_FOOT_SVG,
+      sensorConfig: leftSensorConfig,
+      pressureGradient,
+    }),
+    rightHeatmap: new HeatmapRenderer({
+      containerId: "rightFootContainer",
+      svgFile: RIGHT_FOOT_SVG,
+      sensorConfig: rightSensorConfig,
+      pressureGradient,
+    }),
+  };
 }
 
-updateHeatmaps();
+function createDashboardWebSocket({ selectedDeviceId, onSensorData }) {
+  const dashboardWebSocket = new DashboardWebSocket(onSensorData);
+  dashboardWebSocket.subscribeToDevice(selectedDeviceId);
+  dashboardWebSocket.connect();
+  return dashboardWebSocket;
+}
+
+main();
