@@ -40,8 +40,8 @@ void MetricsCalculator::calculateFootMetrics(FootData &foot, bool isRightFoot)
     }
     else
     {
-        foot.copX = isRightFoot ? 0.53f : 0.47f;
-        foot.copY = 0.47f;
+        foot.copX = 0.0f;
+        foot.copY = 0.0f;
     }
 }
 
@@ -70,6 +70,10 @@ void MetricsCalculator::calculatePostureMetrics(const FootData &leftFoot, const 
         float symmetryScore = 1.0f - (metrics.symmetryIndex / 100.0f);
         float copScore = 1.0f - fabs(metrics.avgCopY - 0.5f) * 2.0f;
         metrics.stabilityScore = (symmetryScore + copScore) / 2.0f;
+    }
+    else
+    {
+        metrics = PostureMetrics();
     }
 }
 
