@@ -1,3 +1,31 @@
+export function showWaitingDashboardState() {
+  document.getElementById("postureState").innerText =
+    "Posture: waiting_for_device";
+
+  document.getElementById("balance").innerText = "Balance: --";
+
+  document.getElementById("stability").innerText = "Stability: --";
+
+  document.getElementById("suggestion").innerText =
+    "Suggestion: Connect your Posture Pad to begin";
+
+  document.getElementById("leftTotal").innerText = "Total: --";
+  document.getElementById("leftCopX").innerText = "CoP X: --";
+  document.getElementById("leftCopY").innerText = "CoP Y: --";
+  document.getElementById("leftForefoot").innerText = "Forefoot: --";
+  document.getElementById("leftRearfoot").innerText = "Rearfoot: --";
+  document.getElementById("leftMedial").innerText = "Medial: --";
+  document.getElementById("leftLateral").innerText = "Lateral: --";
+
+  document.getElementById("rightTotal").innerText = "Total: --";
+  document.getElementById("rightCopX").innerText = "CoP X: --";
+  document.getElementById("rightCopY").innerText = "CoP Y: --";
+  document.getElementById("rightForefoot").innerText = "Forefoot: --";
+  document.getElementById("rightRearfoot").innerText = "Rearfoot: --";
+  document.getElementById("rightMedial").innerText = "Medial: --";
+  document.getElementById("rightLateral").innerText = "Lateral: --";
+}
+
 export function updateDashboardMetrics(data) {
   document.getElementById("postureState").innerText =
     `Posture: ${data.posture_analysis.posture_state}`;

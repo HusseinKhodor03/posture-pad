@@ -10,7 +10,10 @@ import {
   rememberSelectedDeviceId,
 } from "./device/device-store.js";
 import { initTabs } from "./ui/tab-controller.js";
-import { updateDashboardMetrics } from "./ui/dashboard-view.js";
+import {
+  showWaitingDashboardState,
+  updateDashboardMetrics,
+} from "./ui/dashboard-view.js";
 import { HeatmapRenderer } from "./ui/heatmap-renderer.js";
 import { BleProvisioner } from "./network/ble-provisioner.js";
 import { DashboardWebSocket } from "./network/dashboard-web-socket.js";
@@ -19,6 +22,7 @@ function main() {
   let selectedDeviceId = loadSelectedDeviceId();
 
   initTabs();
+  showWaitingDashboardState();
 
   const leftHeatmap = new HeatmapRenderer({
     containerId: "leftFootContainer",
