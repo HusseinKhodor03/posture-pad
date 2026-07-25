@@ -88,8 +88,9 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
   gap: 20px;
+  width: 520px;
 }
 
 .box {
@@ -100,13 +101,34 @@ body {
 }
 
 #footMetricsContainer {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
 
 #postureSummary {
-  width: 100%;
+  height: 173px;
   box-sizing: border-box;
+  overflow: hidden;
+}
+
+#leftFootMetrics,
+#rightFootMetrics {
+  height: 230px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+#postureSummary div,
+#leftFootMetrics div,
+#rightFootMetrics div {
+  line-height: 1.2;
+}
+
+#postureSummary h3,
+#leftFootMetrics h3,
+#rightFootMetrics h3 {
+  white-space: nowrap;
 }
 
 .configCard {
