@@ -14,5 +14,4 @@ void setup()
 void loop()
 {
   deviceManager.update();
-  delay(50);
 }
