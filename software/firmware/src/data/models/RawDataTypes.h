@@ -45,8 +45,8 @@ struct PostureMetrics
     float avgCopY;
     float stabilityScore;
 
-    PostureMetrics() : leftPercent(50.0f), rightPercent(50.0f),
-                       balanceRatio(1.0f), forefootRearfootRatio(0.0f),
+    PostureMetrics() : leftPercent(0.0f), rightPercent(0.0f),
+                       balanceRatio(0.0f), forefootRearfootRatio(0.0f),
                        medialLateralRatio(0.0f), symmetryIndex(0.0f),
                        balanceDiff(0.0f), avgCopY(0.0f), stabilityScore(0.0f) {}
 };

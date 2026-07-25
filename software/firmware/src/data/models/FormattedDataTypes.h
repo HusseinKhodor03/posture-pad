@@ -37,8 +37,8 @@ struct FormattedPostureMetrics
     float symmetryIndex;
     float stabilityScore;
 
-    FormattedPostureMetrics() : leftPercent(50.0f), rightPercent(50.0f),
-                                balanceRatio(1.0f), forefootRearfootRatio(0.0f),
+    FormattedPostureMetrics() : leftPercent(0.0f), rightPercent(0.0f),
+                                balanceRatio(0.0f), forefootRearfootRatio(0.0f),
                                 medialLateralRatio(0.0f), symmetryIndex(0.0f), stabilityScore(0.0f) {}
 };
 
