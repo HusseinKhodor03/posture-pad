@@ -60,6 +60,7 @@ body {
 }
 
 #mainContainer {
+  position: relative;
   display: flex;
   justify-content: space-evenly;
   background-color: #fff;
@@ -93,11 +94,19 @@ body {
   width: 520px;
 }
 
+#dashboardInfoBar {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
 #dashboardStatus {
   display: flex;
   align-items: center;
   gap: 8px;
-  align-self: flex-start;
   padding: 8px 12px;
   border-radius: 999px;
   background: #e0e0e0;
