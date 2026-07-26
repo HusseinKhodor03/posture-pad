@@ -48,6 +48,9 @@ function main() {
     if (dashboardState.data) {
       leftHeatmap.updateSensorData(dashboardState.data.left_foot.sensors);
       rightHeatmap.updateSensorData(dashboardState.data.right_foot.sensors);
+    } else if (dashboardState.status === "offline") {
+      leftHeatmap.resetSensorData();
+      rightHeatmap.resetSensorData();
     }
 
     updateDashboardView({

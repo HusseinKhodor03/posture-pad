@@ -70,6 +70,12 @@ export class HeatmapRenderer {
     });
   }
 
+  resetSensorData() {
+    Object.keys(this.sensorData).forEach((key) => {
+      this.sensorData[key] = 0;
+    });
+  }
+
   draw() {
     if (!this.ctx || !this.canvas || !this.path || !this.bbox) return;
 
