@@ -93,6 +93,31 @@ body {
   width: 520px;
 }
 
+#dashboardStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #e0e0e0;
+  font-weight: 700;
+}
+
+.statusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.statusDot.online {
+  background: #22c55e;
+}
+
+.statusDot.offline {
+  background: #ef4444;
+}
+
 .box {
   background-color: #e0e0e0;
   padding: 15px 20px;

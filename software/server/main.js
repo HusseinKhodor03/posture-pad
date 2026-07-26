@@ -6,6 +6,7 @@ import {
   FRONTEND_PUBLIC_PATH,
   FRONTEND_URL,
   HTTP_PORT,
+  STREAM_INACTIVITY_TIMEOUT_MS,
   TCP_PORT,
 } from "./src/config/constants.js";
 import { TcpSensorServer } from "./src/network/tcp-sensor-server.js";
@@ -31,8 +32,12 @@ function main() {
 
   const tcpSensorServer = new TcpSensorServer({
     port: TCP_PORT,
+    streamInactivityTimeoutMs: STREAM_INACTIVITY_TIMEOUT_MS,
     onSensorData: (deviceId, sensorData) => {
       webSocketHub.broadcastSensorData(deviceId, sensorData);
+    },
+    onDeviceStatus: (deviceId, status) => {
+      webSocketHub.broadcastDeviceStatus(deviceId, status);
     },
   });
   tcpSensorServer.listen();

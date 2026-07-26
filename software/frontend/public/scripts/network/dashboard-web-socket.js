@@ -4,9 +4,10 @@ import {
 } from "../config/constants.js";
 
 export class DashboardWebSocket {
-  constructor(onSensorData) {
-    this.onSensorData = onSensorData;
+  constructor(onDashboardUpdate) {
+    this.onDashboardUpdate = onDashboardUpdate;
     this.selectedDeviceId = null;
+    this.deviceStatus = "offline";
     this.ws = null;
   }
 
@@ -23,7 +24,26 @@ export class DashboardWebSocket {
     });
 
     this.ws.addEventListener("message", (event) => {
-      this.onSensorData(JSON.parse(event.data));
+      const message = JSON.parse(event.data);
+
+      if (message.type === "device_status") {
+        this.deviceStatus = message.status;
+
+        if (this.deviceStatus === "offline") {
+          this.onDashboardUpdate({ status: "offline" });
+        }
+
+        return;
+      }
+
+      if (this.deviceStatus !== "online") {
+        return;
+      }
+
+      this.onDashboardUpdate({
+        status: "online",
+        data: message,
+      });
     });
   }
 

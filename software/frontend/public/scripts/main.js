@@ -11,8 +11,7 @@ import {
 } from "./device/device-store.js";
 import { initTabs } from "./ui/tab-controller.js";
 import {
-  showWaitingDashboardState,
-  updateDashboardMetrics,
+  updateDashboardView,
 } from "./ui/dashboard-view.js";
 import { HeatmapRenderer } from "./ui/heatmap-renderer.js";
 import { BleProvisioner } from "./network/ble-provisioner.js";
@@ -22,7 +21,7 @@ function main() {
   let selectedDeviceId = loadSelectedDeviceId();
 
   initTabs();
-  showWaitingDashboardState();
+  updateDashboardView({ status: "offline" });
 
   const leftHeatmap = new HeatmapRenderer({
     containerId: "leftFootContainer",
@@ -40,10 +39,13 @@ function main() {
   leftHeatmap.init();
   rightHeatmap.init();
 
-  const dashboardWebSocket = new DashboardWebSocket((data) => {
-    leftHeatmap.updateSensorData(data.left_foot.sensors);
-    rightHeatmap.updateSensorData(data.right_foot.sensors);
-    updateDashboardMetrics(data);
+  const dashboardWebSocket = new DashboardWebSocket((dashboardState) => {
+    if (dashboardState.data) {
+      leftHeatmap.updateSensorData(dashboardState.data.left_foot.sensors);
+      rightHeatmap.updateSensorData(dashboardState.data.right_foot.sensors);
+    }
+
+    updateDashboardView(dashboardState);
   });
   dashboardWebSocket.subscribeToDevice(selectedDeviceId);
   dashboardWebSocket.connect();

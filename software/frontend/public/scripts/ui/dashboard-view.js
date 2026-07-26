@@ -1,41 +1,45 @@
-export function showWaitingDashboardState() {
-  document.getElementById("postureState").innerText =
-    "Posture: waiting_for_device";
+export function updateDashboardView({ status, data }) {
+  const isOnline = status === "online";
+  const statusDot = document.getElementById("dashboardStatusDot");
+  const statusText = document.getElementById("dashboardStatusText");
 
-  document.getElementById("balance").innerText = "Balance: --";
+  statusDot.classList.toggle("online", isOnline);
+  statusDot.classList.toggle("offline", !isOnline);
+  statusText.innerText = isOnline ? "Online" : "Offline";
 
-  document.getElementById("stability").innerText = "Stability: --";
+  if (!isOnline || !data) {
+    document.getElementById("postureState").innerText =
+      "Posture: waiting_for_device";
+    document.getElementById("balance").innerText = "Balance: --";
+    document.getElementById("stability").innerText = "Stability: --";
+    document.getElementById("suggestion").innerText =
+      "Suggestion: Connect your Posture Pad to begin";
 
-  document.getElementById("suggestion").innerText =
-    "Suggestion: Connect your Posture Pad to begin";
+    document.getElementById("leftTotal").innerText = "Total: --";
+    document.getElementById("leftCopX").innerText = "CoP X: --";
+    document.getElementById("leftCopY").innerText = "CoP Y: --";
+    document.getElementById("leftForefoot").innerText = "Forefoot: --";
+    document.getElementById("leftRearfoot").innerText = "Rearfoot: --";
+    document.getElementById("leftMedial").innerText = "Medial: --";
+    document.getElementById("leftLateral").innerText = "Lateral: --";
 
-  document.getElementById("leftTotal").innerText = "Total: --";
-  document.getElementById("leftCopX").innerText = "CoP X: --";
-  document.getElementById("leftCopY").innerText = "CoP Y: --";
-  document.getElementById("leftForefoot").innerText = "Forefoot: --";
-  document.getElementById("leftRearfoot").innerText = "Rearfoot: --";
-  document.getElementById("leftMedial").innerText = "Medial: --";
-  document.getElementById("leftLateral").innerText = "Lateral: --";
+    document.getElementById("rightTotal").innerText = "Total: --";
+    document.getElementById("rightCopX").innerText = "CoP X: --";
+    document.getElementById("rightCopY").innerText = "CoP Y: --";
+    document.getElementById("rightForefoot").innerText = "Forefoot: --";
+    document.getElementById("rightRearfoot").innerText = "Rearfoot: --";
+    document.getElementById("rightMedial").innerText = "Medial: --";
+    document.getElementById("rightLateral").innerText = "Lateral: --";
 
-  document.getElementById("rightTotal").innerText = "Total: --";
-  document.getElementById("rightCopX").innerText = "CoP X: --";
-  document.getElementById("rightCopY").innerText = "CoP Y: --";
-  document.getElementById("rightForefoot").innerText = "Forefoot: --";
-  document.getElementById("rightRearfoot").innerText = "Rearfoot: --";
-  document.getElementById("rightMedial").innerText = "Medial: --";
-  document.getElementById("rightLateral").innerText = "Lateral: --";
-}
+    return;
+  }
 
-export function updateDashboardMetrics(data) {
   document.getElementById("postureState").innerText =
     `Posture: ${data.posture_analysis.posture_state}`;
-
   document.getElementById("balance").innerText =
     `Balance: L ${data.posture_metrics.left_percent}% | R ${data.posture_metrics.right_percent}%`;
-
   document.getElementById("stability").innerText =
     `Stability: ${data.posture_metrics.stability_score}`;
-
   document.getElementById("suggestion").innerText =
     `Suggestion: ${data.posture_analysis.posture_suggestion}`;
 
