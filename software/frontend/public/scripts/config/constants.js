@@ -12,6 +12,11 @@ export const STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
 export const LEFT_FOOT_SVG = "assets/left_foot.svg";
 export const RIGHT_FOOT_SVG = "assets/right_foot.svg";
 
+export const TAB_HASHES = {
+  dashboard: "#dashboard",
+  configuration: "#configuration",
+};
+
 export const LEFT_SENSOR_CONFIG = {
   sensor0: { x: 0.74, y: 0.1, type: "circular" }, // big toe
   sensor1: { x: 0.55, y: 0.14, type: "circular" },
