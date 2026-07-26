@@ -6,9 +6,10 @@ import {
   RIGHT_SENSOR_CONFIG,
 } from "./config/constants.js";
 import {
+  formatDeviceLabel,
   loadSelectedDeviceId,
-  rememberSelectedDeviceId,
-} from "./device/device-store.js";
+  selectDevice,
+} from "./device/device-selection.js";
 import { initTabs } from "./ui/tab-controller.js";
 import {
   updateDashboardView,
@@ -19,9 +20,13 @@ import { DashboardWebSocket } from "./network/dashboard-web-socket.js";
 
 function main() {
   let selectedDeviceId = loadSelectedDeviceId();
+  let selectedDeviceLabel = formatDeviceLabel(selectedDeviceId);
 
   initTabs();
-  updateDashboardView({ status: "offline" });
+  updateDashboardView({
+    status: "offline",
+    deviceLabel: selectedDeviceLabel,
+  });
 
   const leftHeatmap = new HeatmapRenderer({
     containerId: "leftFootContainer",
@@ -45,7 +50,10 @@ function main() {
       rightHeatmap.updateSensorData(dashboardState.data.right_foot.sensors);
     }
 
-    updateDashboardView(dashboardState);
+    updateDashboardView({
+      ...dashboardState,
+      deviceLabel: selectedDeviceLabel,
+    });
   });
   dashboardWebSocket.subscribeToDevice(selectedDeviceId);
   dashboardWebSocket.connect();
@@ -53,8 +61,13 @@ function main() {
   const bleProvisioner = new BleProvisioner({
     onDeviceConnected: (deviceId) => {
       selectedDeviceId = deviceId;
-      rememberSelectedDeviceId(selectedDeviceId);
+      selectedDeviceLabel = formatDeviceLabel(selectedDeviceId);
+      selectDevice(selectedDeviceId);
       dashboardWebSocket.subscribeToDevice(selectedDeviceId);
+      updateDashboardView({
+        status: "offline",
+        deviceLabel: selectedDeviceLabel,
+      });
     },
   });
   bleProvisioner.init();

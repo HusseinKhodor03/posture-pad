@@ -1,8 +1,10 @@
-export function updateDashboardView({ status, data }) {
+export function updateDashboardView({ status, deviceLabel, data }) {
   const isOnline = status === "online";
+  const selectedDeviceLabel = document.getElementById("selectedDeviceLabel");
   const statusDot = document.getElementById("dashboardStatusDot");
   const statusText = document.getElementById("dashboardStatusText");
 
+  selectedDeviceLabel.innerText = deviceLabel;
   statusDot.classList.toggle("online", isOnline);
   statusDot.classList.toggle("offline", !isOnline);
   statusText.innerText = isOnline ? "Online" : "Offline";

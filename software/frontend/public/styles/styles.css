@@ -103,6 +103,14 @@ body {
   align-items: center;
 }
 
+#selectedDeviceLabel {
+  color: #667085;
+}
+
+#dashboardStatusSeparator {
+  color: #a0a8b3;
+}
+
 #dashboardStatus {
   display: flex;
   align-items: center;
