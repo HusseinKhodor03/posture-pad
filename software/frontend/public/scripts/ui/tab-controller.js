@@ -18,9 +18,11 @@ function showActiveTab(tabs) {
     tab.button.classList.toggle("active", isSelected);
     tab.panel.hidden = !isSelected;
   });
+
+  return activeTabHash;
 }
 
-export function initTabs() {
+export function initTabs({ onTabChange } = {}) {
   const tabs = [
     {
       button: document.getElementById("dashboardTab"),
@@ -41,8 +43,10 @@ export function initTabs() {
   });
 
   window.addEventListener("hashchange", () => {
-    showActiveTab(tabs);
+    const activeTabHash = showActiveTab(tabs);
+    onTabChange?.(activeTabHash);
   });
 
-  showActiveTab(tabs);
+  const activeTabHash = showActiveTab(tabs);
+  onTabChange?.(activeTabHash);
 }

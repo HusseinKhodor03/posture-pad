@@ -4,6 +4,7 @@ import {
   PRESSURE_GRADIENT,
   RIGHT_FOOT_SVG,
   RIGHT_SENSOR_CONFIG,
+  TAB_HASHES,
 } from "./config/constants.js";
 import {
   formatDeviceLabel,
@@ -21,12 +22,7 @@ import { DashboardWebSocket } from "./network/dashboard-web-socket.js";
 function main() {
   let selectedDeviceId = loadSelectedDeviceId();
   let selectedDeviceLabel = formatDeviceLabel(selectedDeviceId);
-
-  initTabs();
-  updateDashboardView({
-    status: "offline",
-    deviceLabel: selectedDeviceLabel,
-  });
+  let heatmapsInitialized = false;
 
   const leftHeatmap = new HeatmapRenderer({
     containerId: "leftFootContainer",
@@ -41,8 +37,21 @@ function main() {
     pressureGradient: PRESSURE_GRADIENT,
   });
 
-  leftHeatmap.init();
-  rightHeatmap.init();
+  initTabs({
+    onTabChange: (activeTabHash) => {
+      if (activeTabHash !== TAB_HASHES.dashboard || heatmapsInitialized) {
+        return;
+      }
+
+      leftHeatmap.init();
+      rightHeatmap.init();
+      heatmapsInitialized = true;
+    },
+  });
+  updateDashboardView({
+    status: "offline",
+    deviceLabel: selectedDeviceLabel,
+  });
 
   const dashboardWebSocket = new DashboardWebSocket((dashboardState) => {
     if (dashboardState.data) {
