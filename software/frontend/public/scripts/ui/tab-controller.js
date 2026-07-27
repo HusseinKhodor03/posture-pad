@@ -49,4 +49,5 @@ export function initTabs({ onTabChange } = {}) {
 
   const activeTabHash = showActiveTab(tabs);
   onTabChange?.(activeTabHash);
+  return activeTabHash;
 }

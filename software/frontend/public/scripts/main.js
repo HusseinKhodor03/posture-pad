@@ -37,17 +37,26 @@ function main() {
     pressureGradient: PRESSURE_GRADIENT,
   });
 
-  initTabs({
+  const initialTabHash = initTabs({
     onTabChange: (activeTabHash) => {
       if (activeTabHash !== TAB_HASHES.dashboard || heatmapsInitialized) {
         return;
       }
 
-      leftHeatmap.init();
-      rightHeatmap.init();
+      Promise.all([leftHeatmap.init(), rightHeatmap.init()]).finally(() => {
+        document
+          .getElementById("mainContainer")
+          .classList.remove("loadingHeatmaps");
+        document.body.classList.remove("appBooting");
+      });
       heatmapsInitialized = true;
     },
   });
+
+  if (initialTabHash !== TAB_HASHES.dashboard) {
+    document.body.classList.remove("appBooting");
+  }
+
   updateDashboardView({
     status: "offline",
     deviceLabel: selectedDeviceLabel,

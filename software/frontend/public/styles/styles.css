@@ -6,6 +6,11 @@ body {
   color: #17202a;
 }
 
+body.appBooting .appHeader,
+body.appBooting .tabPanel {
+  visibility: hidden;
+}
+
 .appHeader {
   display: flex;
   justify-content: space-between;
@@ -69,6 +74,10 @@ body {
   border-radius: 7px;
 }
 
+#mainContainer.loadingHeatmaps {
+  visibility: hidden;
+}
+
 #container {
   display: flex;
   border: 5px solid #000;
@@ -79,6 +88,8 @@ body {
 
 .foot {
   position: relative;
+  width: 260px;
+  height: 720px;
 }
 
 .foot svg {
