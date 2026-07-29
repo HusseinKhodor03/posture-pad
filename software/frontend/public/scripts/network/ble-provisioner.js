@@ -8,8 +8,9 @@ import {
 } from "../config/constants.js";
 
 export class BleProvisioner {
-  constructor({ onDeviceConnected }) {
+  constructor({ onDeviceConnected, onDeviceDisconnected }) {
     this.onDeviceConnected = onDeviceConnected;
+    this.onDeviceDisconnected = onDeviceDisconnected;
     this.wifiSsidCharacteristic = null;
     this.wifiPasswordCharacteristic = null;
     this.commandCharacteristic = null;
@@ -46,7 +47,7 @@ export class BleProvisioner {
     }
 
     this.connectBleButton.disabled = true;
-    this.bleStatus.textContent = "Connecting...";
+    this.bleStatus.textContent = "Setup";
     this.bleMessage.textContent =
       "Choose your Posture Pad from the browser prompt.";
 
@@ -92,14 +93,14 @@ export class BleProvisioner {
       this.bleDeviceDetails.hidden = false;
       this.wifiForm.hidden = false;
       this.connectWifiButton.disabled = false;
-      this.bleStatus.textContent = "Connected";
+      this.bleStatus.textContent = "Setup";
       this.bleMessage.textContent =
-        "Your Posture Pad is connected over Bluetooth.";
+        "Your Posture Pad is ready for Wi-Fi setup.";
       this.updateWifiStatus(decoder.decode(statusValue));
       this.connectBleButton.textContent = "Connected";
     } catch (error) {
       console.error("Bluetooth connection failed:", error);
-      this.bleStatus.textContent = "Not connected";
+      this.bleStatus.textContent = "Setup";
       this.bleMessage.textContent = "Could not connect to the Posture Pad.";
       this.connectBleButton.disabled = false;
     }
@@ -132,6 +133,8 @@ export class BleProvisioner {
       await this.commandCharacteristic.writeValueWithResponse(
         encoder.encode("connect"),
       );
+      this.wifiSsid.value = "";
+      this.wifiPassword.value = "";
 
       if (this.bleDeviceStatus.textContent === "unconfigured") {
         this.bleMessage.textContent =
@@ -164,11 +167,13 @@ export class BleProvisioner {
     this.wifiSsidCharacteristic = null;
     this.wifiPasswordCharacteristic = null;
     this.commandCharacteristic = null;
-    this.bleStatus.textContent = "Disconnected";
-    this.bleMessage.textContent = "The Bluetooth connection was closed.";
+    this.bleStatus.textContent = "Setup";
+    this.bleMessage.textContent =
+      "Connect your Posture Pad to configure Wi-Fi.";
     this.wifiForm.hidden = true;
     this.connectWifiButton.disabled = true;
     this.connectBleButton.disabled = false;
     this.connectBleButton.textContent = "Reconnect Posture Pad";
+    this.onDeviceDisconnected?.();
   }
 }

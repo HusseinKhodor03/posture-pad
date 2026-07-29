@@ -15,6 +15,7 @@ import { initTabs } from "./ui/tab-controller.js";
 import {
   updateDashboardView,
 } from "./ui/dashboard-view.js";
+import { updateConfigView } from "./ui/config-view.js";
 import { HeatmapRenderer } from "./ui/heatmap-renderer.js";
 import { BleProvisioner } from "./network/ble-provisioner.js";
 import { DashboardWebSocket } from "./network/dashboard-web-socket.js";
@@ -22,6 +23,8 @@ import { DashboardWebSocket } from "./network/dashboard-web-socket.js";
 function main() {
   let selectedDeviceId = loadSelectedDeviceId();
   let selectedDeviceLabel = formatDeviceLabel(selectedDeviceId);
+  let selectedDeviceStatus = "offline";
+  let isSetupConnected = false;
   let heatmapsInitialized = false;
 
   const leftHeatmap = new HeatmapRenderer({
@@ -58,11 +61,19 @@ function main() {
   }
 
   updateDashboardView({
-    status: "offline",
+    status: selectedDeviceStatus,
     deviceLabel: selectedDeviceLabel,
+  });
+  updateConfigView({
+    deviceLabel: selectedDeviceLabel,
+    hasSelectedDevice: Boolean(selectedDeviceId),
+    isOnline: selectedDeviceStatus === "online",
+    isSetupConnected,
   });
 
   const dashboardWebSocket = new DashboardWebSocket((dashboardState) => {
+    selectedDeviceStatus = dashboardState.status;
+
     if (dashboardState.data) {
       leftHeatmap.updateSensorData(dashboardState.data.left_foot.sensors);
       rightHeatmap.updateSensorData(dashboardState.data.right_foot.sensors);
@@ -75,19 +86,43 @@ function main() {
       ...dashboardState,
       deviceLabel: selectedDeviceLabel,
     });
+    updateConfigView({
+      deviceLabel: selectedDeviceLabel,
+      hasSelectedDevice: Boolean(selectedDeviceId),
+      isOnline: selectedDeviceStatus === "online",
+      isSetupConnected,
+    });
   });
   dashboardWebSocket.subscribeToDevice(selectedDeviceId);
   dashboardWebSocket.connect();
 
   const bleProvisioner = new BleProvisioner({
     onDeviceConnected: (deviceId) => {
+      const isSameDevice = selectedDeviceId === deviceId;
       selectedDeviceId = deviceId;
       selectedDeviceLabel = formatDeviceLabel(selectedDeviceId);
+      selectedDeviceStatus = isSameDevice ? selectedDeviceStatus : "offline";
+      isSetupConnected = true;
       selectDevice(selectedDeviceId);
       dashboardWebSocket.subscribeToDevice(selectedDeviceId);
       updateDashboardView({
-        status: "offline",
+        status: selectedDeviceStatus,
         deviceLabel: selectedDeviceLabel,
+      });
+      updateConfigView({
+        deviceLabel: selectedDeviceLabel,
+        hasSelectedDevice: Boolean(selectedDeviceId),
+        isOnline: selectedDeviceStatus === "online",
+        isSetupConnected,
+      });
+    },
+    onDeviceDisconnected: () => {
+      isSetupConnected = false;
+      updateConfigView({
+        deviceLabel: selectedDeviceLabel,
+        hasSelectedDevice: Boolean(selectedDeviceId),
+        isOnline: selectedDeviceStatus === "online",
+        isSetupConnected,
       });
     },
   });

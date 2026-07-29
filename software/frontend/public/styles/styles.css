@@ -199,9 +199,20 @@ body.appBooting .tabPanel {
 }
 
 .configCard > p,
-.emptyState p {
+.configSection p {
   color: #667085;
   line-height: 1.6;
+}
+
+.configWifiStatus {
+  margin: 14px 0;
+  font-weight: 700;
+}
+
+.configDivider {
+  border: 0;
+  border-top: 1px solid #dfe4ea;
+  margin: 28px 0;
 }
 
 .statusBadge {
@@ -214,7 +225,7 @@ body.appBooting .tabPanel {
   font-weight: 700;
 }
 
-.emptyState {
+.configSection {
   margin-top: 28px;
   padding: 24px;
   border: 1px dashed #aeb8c4;
@@ -223,7 +234,7 @@ body.appBooting .tabPanel {
   text-align: center;
 }
 
-.emptyState h3 {
+.configSection h3 {
   margin-top: 0;
 }
 
@@ -241,6 +252,16 @@ body.appBooting .tabPanel {
 .connectButton:disabled {
   background: #aeb8c4;
   cursor: default;
+}
+
+.secondaryButton {
+  background: #e8f1ff;
+  color: #1769e0;
+}
+
+.secondaryButton:disabled {
+  background: #eef2f6;
+  color: #8a96a8;
 }
 
 #bleDeviceDetails {

@@ -72,15 +72,17 @@
 
     <section class="tabPanel" id="configPanel" hidden>
       <div class="configCard">
-        <span class="statusBadge" id="bleStatus">Not connected</span>
-        <h2>Device configuration</h2>
-        <p>
-          Connect to your Posture Pad over Bluetooth to begin setup.
+        <span class="statusBadge" id="bleStatus">Setup</span>
+        <h2 id="configTitle">Set up Posture Pad</h2>
+        <p id="configDeviceMessage">
+          Connect your Posture Pad to configure Wi-Fi.
         </p>
 
-        <div class="emptyState">
-          <h3 id="bleDeviceName">No Posture Pad connected</h3>
-          <p id="bleMessage">Make sure your device is powered on and nearby.</p>
+        <div class="configSection" id="setupSection">
+          <h3 id="bleDeviceName">Connect Posture Pad</h3>
+          <p id="bleMessage">
+            Make sure your device is powered on and nearby.
+          </p>
           <button class="connectButton" id="connectBleButton">
             Connect Posture Pad
           </button>
@@ -91,22 +93,39 @@
           </div>
         </div>
 
-        <div class="wifiForm" id="wifiForm" hidden>
-          <h3>Wi-Fi network</h3>
+        <div id="wifiManagementSection" hidden>
+          <p class="configWifiStatus" id="configWifiStatus">
+            Connected to Wi-Fi
+          </p>
 
-          <label>
-            Network name
-            <input id="wifiSsid" />
-          </label>
+          <hr class="configDivider" />
 
-          <label>
-            Password
-            <input id="wifiPassword" type="password" />
-          </label>
+          <h3>Networks</h3>
+          <p id="networkListMessage">
+            Network scanning will appear here in the next setup step.
+          </p>
 
-          <button class="connectButton" id="connectWifiButton" disabled>
-            Connect to Wi-Fi
+          <button class="connectButton secondaryButton" id="scanNetworksButton" disabled>
+            Scan Networks
           </button>
+
+          <div class="wifiForm" id="wifiForm" hidden>
+            <h4>Connect manually</h4>
+
+            <label>
+              Network name
+              <input id="wifiSsid" />
+            </label>
+
+            <label>
+              Password
+              <input id="wifiPassword" type="password" />
+            </label>
+
+            <button class="connectButton" id="connectWifiButton" disabled>
+              Connect to Wi-Fi
+            </button>
+          </div>
         </div>
       </div>
     </section>
