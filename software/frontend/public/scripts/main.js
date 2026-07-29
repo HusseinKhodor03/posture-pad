@@ -24,6 +24,7 @@ function main() {
   let selectedDeviceId = loadSelectedDeviceId();
   let selectedDeviceLabel = formatDeviceLabel(selectedDeviceId);
   let selectedDeviceStatus = "offline";
+  let selectedDeviceWifiSsid = "";
   let isSetupConnected = false;
   let heatmapsInitialized = false;
 
@@ -69,15 +70,18 @@ function main() {
     hasSelectedDevice: Boolean(selectedDeviceId),
     isOnline: selectedDeviceStatus === "online",
     isSetupConnected,
+    wifiSsid: selectedDeviceWifiSsid,
   });
 
   const dashboardWebSocket = new DashboardWebSocket((dashboardState) => {
     selectedDeviceStatus = dashboardState.status;
 
     if (dashboardState.data) {
+      selectedDeviceWifiSsid = dashboardState.data.wifi_ssid || "";
       leftHeatmap.updateSensorData(dashboardState.data.left_foot.sensors);
       rightHeatmap.updateSensorData(dashboardState.data.right_foot.sensors);
     } else if (dashboardState.status === "offline") {
+      selectedDeviceWifiSsid = "";
       leftHeatmap.resetSensorData();
       rightHeatmap.resetSensorData();
     }
@@ -91,6 +95,7 @@ function main() {
       hasSelectedDevice: Boolean(selectedDeviceId),
       isOnline: selectedDeviceStatus === "online",
       isSetupConnected,
+      wifiSsid: selectedDeviceWifiSsid,
     });
   });
   dashboardWebSocket.subscribeToDevice(selectedDeviceId);
@@ -102,6 +107,7 @@ function main() {
       selectedDeviceId = deviceId;
       selectedDeviceLabel = formatDeviceLabel(selectedDeviceId);
       selectedDeviceStatus = isSameDevice ? selectedDeviceStatus : "offline";
+      selectedDeviceWifiSsid = isSameDevice ? selectedDeviceWifiSsid : "";
       isSetupConnected = true;
       selectDevice(selectedDeviceId);
       dashboardWebSocket.subscribeToDevice(selectedDeviceId);
@@ -114,6 +120,7 @@ function main() {
         hasSelectedDevice: Boolean(selectedDeviceId),
         isOnline: selectedDeviceStatus === "online",
         isSetupConnected,
+        wifiSsid: selectedDeviceWifiSsid,
       });
     },
     onDeviceDisconnected: () => {
@@ -123,6 +130,7 @@ function main() {
         hasSelectedDevice: Boolean(selectedDeviceId),
         isOnline: selectedDeviceStatus === "online",
         isSetupConnected,
+        wifiSsid: selectedDeviceWifiSsid,
       });
     },
   });

@@ -15,6 +15,7 @@ public:
     void update();
     bool isWifiConnected();
     bool isConnected();
+    const String &getSsid() const;
     WiFiClient &getClient();
 
 private:

@@ -3,6 +3,7 @@ export function updateConfigView({
   hasSelectedDevice,
   isOnline,
   isSetupConnected,
+  wifiSsid,
 }) {
   const bleStatus = document.getElementById("bleStatus");
   const configTitle = document.getElementById("configTitle");
@@ -21,7 +22,9 @@ export function updateConfigView({
     configTitle.textContent = deviceLabel;
     configDeviceMessage.textContent =
       "This Posture Pad is connected and ready to stream data.";
-    configWifiStatus.textContent = "Connected to Wi-Fi";
+    configWifiStatus.textContent = wifiSsid
+      ? `Connected to Wi-Fi: ${wifiSsid}`
+      : "Connected to Wi-Fi";
     setupSection.hidden = true;
     wifiManagementSection.hidden = false;
     wifiForm.hidden = true;

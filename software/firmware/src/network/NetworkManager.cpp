@@ -79,6 +79,11 @@ bool NetworkManager::isConnected()
     return (WiFi.status() == WL_CONNECTED) && client.connected();
 }
 
+const String &NetworkManager::getSsid() const
+{
+    return ssid;
+}
+
 WiFiClient &NetworkManager::getClient()
 {
     return client;
