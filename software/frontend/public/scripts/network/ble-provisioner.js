@@ -17,6 +17,9 @@ export class BleProvisioner {
     this.wifiPasswordCharacteristic = null;
     this.commandCharacteristic = null;
     this.scanResultsCharacteristic = null;
+    this.selectedNetwork = null;
+    this.scannedNetworks = [];
+    this.networkListSignature = "";
   }
 
   init() {
@@ -27,11 +30,15 @@ export class BleProvisioner {
     this.bleDeviceDetails = document.getElementById("bleDeviceDetails");
     this.bleDeviceId = document.getElementById("bleDeviceId");
     this.bleDeviceStatus = document.getElementById("bleDeviceStatus");
-    this.wifiForm = document.getElementById("wifiForm");
+    this.wifiDialog = document.getElementById("wifiDialog");
+    this.wifiDialogTitle = document.getElementById("wifiDialogTitle");
+    this.wifiSsidLabel = document.getElementById("wifiSsidLabel");
     this.wifiSsid = document.getElementById("wifiSsid");
     this.wifiPassword = document.getElementById("wifiPassword");
     this.connectWifiButton = document.getElementById("connectWifiButton");
+    this.cancelWifiButton = document.getElementById("cancelWifiButton");
     this.scanNetworksButton = document.getElementById("scanNetworksButton");
+    this.otherNetworkButton = document.getElementById("otherNetworkButton");
     this.networkListMessage = document.getElementById("networkListMessage");
     this.networkList = document.getElementById("networkList");
 
@@ -43,8 +50,31 @@ export class BleProvisioner {
       this.sendWifiCredentials();
     });
 
+    this.cancelWifiButton.addEventListener("click", () => {
+      this.closeWifiDialog();
+    });
+
     this.scanNetworksButton.addEventListener("click", () => {
       this.scanWifiNetworks();
+    });
+
+    this.otherNetworkButton.addEventListener("click", () => {
+      this.openManualNetworkDialog();
+    });
+
+    this.networkList.addEventListener("click", (event) => {
+      const networkButton = event.target.closest(".networkListButton");
+
+      if (!networkButton) {
+        return;
+      }
+
+      const networkIndex = Number(networkButton.dataset.networkIndex);
+      const network = this.scannedNetworks[networkIndex];
+
+      if (network) {
+        this.selectNetwork(network);
+      }
     });
   }
 
@@ -110,8 +140,9 @@ export class BleProvisioner {
       this.bleDeviceName.textContent = device.name;
       this.bleDeviceId.textContent = deviceId;
       this.bleDeviceDetails.hidden = false;
-      this.wifiForm.hidden = false;
+      this.closeWifiDialog();
       this.connectWifiButton.disabled = false;
+      this.otherNetworkButton.disabled = false;
       this.bleStatus.textContent = "Setup";
       this.bleMessage.textContent =
         "Your Posture Pad is ready for Wi-Fi setup.";
@@ -127,10 +158,14 @@ export class BleProvisioner {
     }
   }
 
-  async sendWifiCredentials() {
+  async sendWifiCredentials(
+    ssid = this.selectedNetwork?.ssid ?? this.wifiSsid.value.trim(),
+    password = this.wifiPassword.value,
+    button = this.connectWifiButton,
+  ) {
     const encoder = new TextEncoder();
-    const ssidValue = encoder.encode(this.wifiSsid.value);
-    const passwordValue = encoder.encode(this.wifiPassword.value);
+    const ssidValue = encoder.encode(ssid);
+    const passwordValue = encoder.encode(password);
 
     if (ssidValue.length === 0) {
       this.bleMessage.textContent = "Enter a Wi-Fi network name.";
@@ -143,8 +178,10 @@ export class BleProvisioner {
       return;
     }
 
-    this.connectWifiButton.disabled = true;
-    this.connectWifiButton.textContent = "Sending...";
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Sending...";
+    }
 
     try {
       await this.wifiSsidCharacteristic.writeValueWithResponse(ssidValue);
@@ -156,6 +193,7 @@ export class BleProvisioner {
       );
       this.wifiSsid.value = "";
       this.wifiPassword.value = "";
+      this.closeWifiDialog();
 
       if (this.bleDeviceStatus.textContent === "unconfigured") {
         this.bleMessage.textContent =
@@ -165,8 +203,10 @@ export class BleProvisioner {
       console.error("Could not send Wi-Fi credentials:", error);
       this.bleMessage.textContent = "Could not send the Wi-Fi credentials.";
     } finally {
-      this.connectWifiButton.disabled = false;
-      this.connectWifiButton.textContent = "Connect to Wi-Fi";
+      if (button) {
+        button.disabled = false;
+        button.textContent = "Connect to Wi-Fi";
+      }
     }
   }
 
@@ -179,6 +219,9 @@ export class BleProvisioner {
     this.scanNetworksButton.textContent = "Scanning...";
     this.networkListMessage.textContent = "Scanning nearby networks...";
     this.networkList.replaceChildren();
+    this.scannedNetworks = [];
+    this.networkListSignature = "";
+    this.closeWifiDialog();
 
     try {
       await this.commandCharacteristic.writeValueWithResponse(
@@ -239,6 +282,17 @@ export class BleProvisioner {
   }
 
   renderNetworkList(networks) {
+    const networkListSignature = this.buildNetworkListSignature(networks);
+    const networkListChanged =
+      networkListSignature !== this.networkListSignature;
+
+    this.scannedNetworks = networks;
+
+    if (!networkListChanged) {
+      return;
+    }
+
+    this.networkListSignature = networkListSignature;
     this.networkList.replaceChildren();
 
     if (!networks.length) {
@@ -249,9 +303,14 @@ export class BleProvisioner {
     this.networkListMessage.textContent =
       "Choose a network from the list below.";
 
-    networks.forEach((network) => {
+    networks.forEach((network, index) => {
       const networkItem = document.createElement("li");
       networkItem.className = "networkListItem";
+
+      const networkButton = document.createElement("button");
+      networkButton.className = "networkListButton";
+      networkButton.type = "button";
+      networkButton.dataset.networkIndex = index;
 
       const networkName = document.createElement("span");
       networkName.className = "networkName";
@@ -274,9 +333,59 @@ export class BleProvisioner {
       );
 
       networkIcons.append(lockIcon, signalIcon);
-      networkItem.append(networkName, networkIcons);
+      networkButton.append(networkName, networkIcons);
+      networkItem.appendChild(networkButton);
       this.networkList.appendChild(networkItem);
     });
+  }
+
+  buildNetworkListSignature(networks) {
+    return networks
+      .map((network) => {
+        const security = network.secure ? "secure" : "open";
+        const signalLevel = this.getSignalLevel(network.rssi);
+        return `${network.ssid}|${security}|${signalLevel}`;
+      })
+      .join("\n");
+  }
+
+  selectNetwork(network) {
+    this.selectedNetwork = network;
+
+    if (!network.secure) {
+      this.selectedNetwork = null;
+      this.sendWifiCredentials(network.ssid, "", null);
+      return;
+    }
+
+    this.openSelectedNetworkDialog(network);
+  }
+
+  openSelectedNetworkDialog(network) {
+    this.wifiDialogTitle.textContent = `Connect to ${network.ssid}`;
+    this.wifiSsidLabel.hidden = true;
+    this.wifiSsid.value = network.ssid;
+    this.wifiPassword.value = "";
+    this.wifiDialog.hidden = false;
+    this.wifiPassword.focus();
+  }
+
+  openManualNetworkDialog() {
+    this.selectedNetwork = null;
+    this.wifiDialogTitle.textContent = "Other Network";
+    this.wifiSsidLabel.hidden = false;
+    this.wifiSsid.value = "";
+    this.wifiPassword.value = "";
+    this.wifiDialog.hidden = false;
+    this.wifiSsid.focus();
+  }
+
+  closeWifiDialog() {
+    this.selectedNetwork = null;
+    this.wifiDialog.hidden = true;
+    this.wifiSsidLabel.hidden = false;
+    this.wifiSsid.value = "";
+    this.wifiPassword.value = "";
   }
 
   getSignalLevel(rssi) {
@@ -319,13 +428,16 @@ export class BleProvisioner {
     this.bleStatus.textContent = "Setup";
     this.bleMessage.textContent =
       "Connect your Posture Pad to configure Wi-Fi.";
-    this.wifiForm.hidden = true;
+    this.closeWifiDialog();
     this.connectWifiButton.disabled = true;
     this.connectBleButton.disabled = false;
     this.connectBleButton.textContent = "Reconnect Posture Pad";
     this.scanNetworksButton.disabled = true;
+    this.otherNetworkButton.disabled = true;
     this.scanNetworksButton.textContent = "Scan Networks";
     this.networkList.replaceChildren();
+    this.scannedNetworks = [];
+    this.networkListSignature = "";
     this.onDeviceDisconnected?.();
   }
 }

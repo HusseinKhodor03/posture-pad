@@ -13,9 +13,9 @@ export function updateConfigView({
   const wifiManagementSection = document.getElementById(
     "wifiManagementSection",
   );
-  const wifiForm = document.getElementById("wifiForm");
   const networkListMessage = document.getElementById("networkListMessage");
   const scanNetworksButton = document.getElementById("scanNetworksButton");
+  const otherNetworkButton = document.getElementById("otherNetworkButton");
 
   if (isOnline) {
     bleStatus.textContent = "Wi-Fi";
@@ -27,10 +27,10 @@ export function updateConfigView({
       : "Connected to Wi-Fi";
     setupSection.hidden = true;
     wifiManagementSection.hidden = false;
-    wifiForm.hidden = true;
     networkListMessage.textContent =
       "Network scanning is available during setup.";
     scanNetworksButton.disabled = true;
+    otherNetworkButton.disabled = true;
     return;
   }
 
@@ -42,10 +42,10 @@ export function updateConfigView({
     configWifiStatus.textContent = "Not connected to Wi-Fi";
     setupSection.hidden = true;
     wifiManagementSection.hidden = false;
-    wifiForm.hidden = false;
     networkListMessage.textContent =
       "Scan nearby networks or enter a network manually.";
     scanNetworksButton.disabled = false;
+    otherNetworkButton.disabled = false;
     return;
   }
 
@@ -58,5 +58,5 @@ export function updateConfigView({
     : "Connect your Posture Pad to configure Wi-Fi.";
   setupSection.hidden = false;
   wifiManagementSection.hidden = true;
-  wifiForm.hidden = true;
+  otherNetworkButton.disabled = true;
 }

@@ -106,30 +106,42 @@
           </p>
           <ul class="networkList" id="networkList"></ul>
 
-          <button class="connectButton secondaryButton" id="scanNetworksButton" disabled>
-            Scan Networks
-          </button>
-
-          <div class="wifiForm" id="wifiForm" hidden>
-            <h4>Connect manually</h4>
-
-            <label>
-              Network name
-              <input id="wifiSsid" />
-            </label>
-
-            <label>
-              Password
-              <input id="wifiPassword" type="password" />
-            </label>
-
-            <button class="connectButton" id="connectWifiButton" disabled>
-              Connect to Wi-Fi
+          <div class="networkActions">
+            <button class="connectButton secondaryButton" id="scanNetworksButton" disabled>
+              Scan Networks
+            </button>
+            <button class="connectButton secondaryButton" id="otherNetworkButton" disabled>
+              Other...
             </button>
           </div>
         </div>
       </div>
     </section>
+
+    <div class="wifiDialog" id="wifiDialog" hidden>
+      <div class="wifiDialogCard">
+        <h3 id="wifiDialogTitle">Connect to Wi-Fi</h3>
+
+        <label id="wifiSsidLabel">
+          Network name
+          <input id="wifiSsid" />
+        </label>
+
+        <label>
+          Password
+          <input id="wifiPassword" type="password" />
+        </label>
+
+        <div class="wifiDialogActions">
+          <button class="connectButton secondaryButton" id="cancelWifiButton">
+            Cancel
+          </button>
+          <button class="connectButton" id="connectWifiButton" disabled>
+            Connect to Wi-Fi
+          </button>
+        </div>
+      </div>
+    </div>
 
     <script type="module" src="scripts/main.js"></script>
   </body>

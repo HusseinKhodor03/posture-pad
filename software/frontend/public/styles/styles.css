@@ -273,15 +273,44 @@ body.appBooting .tabPanel {
 }
 
 .networkListItem {
+  margin: 0;
+}
+
+.networkListButton {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+  width: 100%;
   padding: 12px 14px;
   border: 1px solid #dfe4ea;
   border-radius: 10px;
   background: #fff;
+  color: inherit;
+  font: inherit;
   font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.networkListButton:hover {
+  border-color: #b6c2d1;
+  background: #f7fbff;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 8%);
+}
+
+.networkListButton:focus-visible {
+  outline: 2px solid #1769e0;
+  outline-offset: 2px;
+}
+
+.networkListButton * {
+  pointer-events: none;
 }
 
 .networkName {
@@ -352,17 +381,52 @@ body.appBooting .tabPanel {
   margin: 6px 0;
 }
 
-.wifiForm {
-  margin-top: 28px;
+.networkActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
 }
 
-.wifiForm label {
+.wifiDialog {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(15 23 42 / 28%);
+}
+
+.wifiDialog[hidden] {
+  display: none;
+}
+
+.wifiDialogCard {
+  width: min(420px, 100%);
+  padding: 24px;
+  border: 1px solid #dfe4ea;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 18px 60px rgb(15 23 42 / 18%);
+}
+
+.wifiDialogCard h3 {
+  margin: 0 0 18px;
+}
+
+.wifiDialogCard label {
   display: block;
   margin: 16px 0;
   font-weight: 700;
 }
 
-.wifiForm input {
+.wifiDialogCard label[hidden] {
+  display: none;
+}
+
+.wifiDialogCard input {
   display: block;
   width: 100%;
   box-sizing: border-box;
@@ -371,4 +435,11 @@ body.appBooting .tabPanel {
   border: 1px solid #aeb8c4;
   border-radius: 8px;
   font: inherit;
+}
+
+.wifiDialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
 }
