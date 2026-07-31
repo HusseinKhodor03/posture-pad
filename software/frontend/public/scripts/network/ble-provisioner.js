@@ -1,12 +1,13 @@
 import {
   BLE_SERVICE_UUID,
-  DEVICE_ID_UUID,
-  WIFI_SSID_UUID,
-  WIFI_PASSWORD_UUID,
   COMMAND_UUID,
+  DEVICE_ID_UUID,
   STATUS_UUID,
+  WIFI_PASSWORD_UUID,
   WIFI_SCAN_RESULTS_UUID,
+  WIFI_SSID_UUID,
 } from "../config/constants.js";
+import { createWifiSignalIcon } from "../ui/wifi-signal-icon.js";
 
 export class BleProvisioner {
   constructor({ onDeviceConnected, onDeviceDisconnected }) {
@@ -266,16 +267,11 @@ export class BleProvisioner {
       lockIcon.title = network.secure ? "Secured network" : "Open network";
 
       const signalIcon = document.createElement("span");
-      signalIcon.className = `networkIcon networkSignalIcon ${this.getSignalClass(
-        network.rssi,
-      )}`;
+      signalIcon.className = "networkIcon networkSignalIcon";
       signalIcon.title = this.getSignalLabel(network.rssi);
-
-      for (let barIndex = 0; barIndex < 4; barIndex += 1) {
-        const signalBar = document.createElement("span");
-        signalBar.className = "signalBar";
-        signalIcon.appendChild(signalBar);
-      }
+      signalIcon.appendChild(
+        createWifiSignalIcon(this.getSignalLevel(network.rssi)),
+      );
 
       networkIcons.append(lockIcon, signalIcon);
       networkItem.append(networkName, networkIcons);
@@ -283,20 +279,20 @@ export class BleProvisioner {
     });
   }
 
-  getSignalClass(rssi) {
+  getSignalLevel(rssi) {
     if (rssi >= -50) {
-      return "signalStrong";
+      return 4;
     }
 
     if (rssi >= -67) {
-      return "signalMedium";
+      return 3;
     }
 
     if (rssi >= -75) {
-      return "signalWeak";
+      return 2;
     }
 
-    return "signalPoor";
+    return 1;
   }
 
   getSignalLabel(rssi) {
