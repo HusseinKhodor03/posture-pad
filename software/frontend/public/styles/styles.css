@@ -264,6 +264,22 @@ body.appBooting .tabPanel {
   color: #8a96a8;
 }
 
+.networkList {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.networkListItem {
+  padding: 12px 14px;
+  border: 1px solid #dfe4ea;
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 700;
+}
+
 #bleDeviceDetails {
   margin-top: 20px;
 }

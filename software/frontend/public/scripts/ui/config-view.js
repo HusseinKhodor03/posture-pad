@@ -29,7 +29,7 @@ export function updateConfigView({
     wifiManagementSection.hidden = false;
     wifiForm.hidden = true;
     networkListMessage.textContent =
-      "Network scanning will appear here in the next setup step.";
+      "Network scanning is available during setup.";
     scanNetworksButton.disabled = true;
     return;
   }
@@ -44,8 +44,8 @@ export function updateConfigView({
     wifiManagementSection.hidden = false;
     wifiForm.hidden = false;
     networkListMessage.textContent =
-      "Network scanning will appear here in the next setup step.";
-    scanNetworksButton.disabled = true;
+      "Scan nearby networks or enter a network manually.";
+    scanNetworksButton.disabled = false;
     return;
   }
 

@@ -5,6 +5,7 @@ import {
   WIFI_PASSWORD_UUID,
   COMMAND_UUID,
   STATUS_UUID,
+  WIFI_SCAN_RESULTS_UUID,
 } from "../config/constants.js";
 
 export class BleProvisioner {
@@ -14,6 +15,7 @@ export class BleProvisioner {
     this.wifiSsidCharacteristic = null;
     this.wifiPasswordCharacteristic = null;
     this.commandCharacteristic = null;
+    this.scanResultsCharacteristic = null;
   }
 
   init() {
@@ -28,6 +30,9 @@ export class BleProvisioner {
     this.wifiSsid = document.getElementById("wifiSsid");
     this.wifiPassword = document.getElementById("wifiPassword");
     this.connectWifiButton = document.getElementById("connectWifiButton");
+    this.scanNetworksButton = document.getElementById("scanNetworksButton");
+    this.networkListMessage = document.getElementById("networkListMessage");
+    this.networkList = document.getElementById("networkList");
 
     this.connectBleButton.addEventListener("click", () => {
       this.connectDevice();
@@ -35,6 +40,10 @@ export class BleProvisioner {
 
     this.connectWifiButton.addEventListener("click", () => {
       this.sendWifiCredentials();
+    });
+
+    this.scanNetworksButton.addEventListener("click", () => {
+      this.scanWifiNetworks();
     });
   }
 
@@ -72,6 +81,8 @@ export class BleProvisioner {
         await service.getCharacteristic(WIFI_PASSWORD_UUID);
       this.commandCharacteristic =
         await service.getCharacteristic(COMMAND_UUID);
+      this.scanResultsCharacteristic =
+        await service.getCharacteristic(WIFI_SCAN_RESULTS_UUID);
 
       const deviceIdValue = await deviceIdCharacteristic.readValue();
       const statusValue = await statusCharacteristic.readValue();
@@ -84,6 +95,13 @@ export class BleProvisioner {
         },
       );
       await statusCharacteristic.startNotifications();
+      this.scanResultsCharacteristic.addEventListener(
+        "characteristicvaluechanged",
+        (event) => {
+          this.handleScanResultsChange(event);
+        },
+      );
+      await this.scanResultsCharacteristic.startNotifications();
 
       const deviceId = decoder.decode(deviceIdValue);
       this.onDeviceConnected(deviceId);
@@ -98,6 +116,8 @@ export class BleProvisioner {
         "Your Posture Pad is ready for Wi-Fi setup.";
       this.updateWifiStatus(decoder.decode(statusValue));
       this.connectBleButton.textContent = "Connected";
+      this.scanNetworksButton.disabled = false;
+      this.scanWifiNetworks();
     } catch (error) {
       console.error("Bluetooth connection failed:", error);
       this.bleStatus.textContent = "Setup";
@@ -149,6 +169,28 @@ export class BleProvisioner {
     }
   }
 
+  async scanWifiNetworks() {
+    if (!this.commandCharacteristic) {
+      return;
+    }
+
+    this.scanNetworksButton.disabled = true;
+    this.scanNetworksButton.textContent = "Scanning...";
+    this.networkListMessage.textContent = "Scanning nearby networks...";
+    this.networkList.replaceChildren();
+
+    try {
+      await this.commandCharacteristic.writeValueWithResponse(
+        new TextEncoder().encode("scan_wifi"),
+      );
+    } catch (error) {
+      console.error("Could not start Wi-Fi scan:", error);
+      this.networkListMessage.textContent = "Could not scan Wi-Fi networks.";
+      this.scanNetworksButton.disabled = false;
+      this.scanNetworksButton.textContent = "Scan Networks";
+    }
+  }
+
   updateWifiStatus(status) {
     this.bleDeviceStatus.textContent = status;
 
@@ -163,10 +205,64 @@ export class BleProvisioner {
     this.updateWifiStatus(new TextDecoder().decode(event.target.value));
   }
 
+  async handleScanResultsChange(event) {
+    let scanResults;
+
+    try {
+      const value = await event.target.readValue();
+      const scanResultText = new TextDecoder().decode(value);
+      scanResults = JSON.parse(scanResultText);
+    } catch (error) {
+      console.error("Could not read Wi-Fi scan results:", error);
+      this.networkListMessage.textContent =
+        "Could not read Wi-Fi scan results.";
+      this.scanNetworksButton.disabled = false;
+      this.scanNetworksButton.textContent = "Scan Networks";
+      return;
+    }
+
+    if (scanResults.status === "scanning") {
+      this.networkListMessage.textContent = "Scanning nearby networks...";
+      return;
+    }
+
+    this.scanNetworksButton.disabled = false;
+    this.scanNetworksButton.textContent = "Scan Networks";
+
+    if (scanResults.status !== "complete") {
+      this.networkListMessage.textContent = "Could not scan Wi-Fi networks.";
+      return;
+    }
+
+    this.renderNetworkList(scanResults.networks ?? []);
+  }
+
+  renderNetworkList(networks) {
+    this.networkList.replaceChildren();
+
+    if (!networks.length) {
+      this.networkListMessage.textContent = "No Wi-Fi networks found.";
+      return;
+    }
+
+    this.networkListMessage.textContent =
+      "Choose a network from the list below.";
+
+    networks.forEach((network) => {
+      const networkItem = document.createElement("li");
+      networkItem.className = "networkListItem";
+      networkItem.textContent = `${network.ssid} · ${network.rssi} dBm · ${
+        network.secure ? "Secured" : "Open"
+      }`;
+      this.networkList.appendChild(networkItem);
+    });
+  }
+
   handleDisconnect() {
     this.wifiSsidCharacteristic = null;
     this.wifiPasswordCharacteristic = null;
     this.commandCharacteristic = null;
+    this.scanResultsCharacteristic = null;
     this.bleStatus.textContent = "Setup";
     this.bleMessage.textContent =
       "Connect your Posture Pad to configure Wi-Fi.";
@@ -174,6 +270,9 @@ export class BleProvisioner {
     this.connectWifiButton.disabled = true;
     this.connectBleButton.disabled = false;
     this.connectBleButton.textContent = "Reconnect Posture Pad";
+    this.scanNetworksButton.disabled = true;
+    this.scanNetworksButton.textContent = "Scan Networks";
+    this.networkList.replaceChildren();
     this.onDeviceDisconnected?.();
   }
 }
