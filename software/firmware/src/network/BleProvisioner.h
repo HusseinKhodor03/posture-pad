@@ -10,6 +10,8 @@ public:
     BleProvisioner();
     void begin();
     bool takeConnectionRequest(String &ssid, String &password);
+    bool takeScanRequest();
+    void scanWifiNetworks();
     void setStatus(const String &status);
     const String &getDeviceId() const;
 
@@ -18,11 +20,14 @@ private:
     String pendingSsid;
     String pendingPassword;
     bool connectionRequested;
+    bool scanRequested;
     NimBLECharacteristic *statusCharacteristic;
+    NimBLECharacteristic *scanResultsCharacteristic;
     String currentStatus;
     String deviceId;
 
     String buildDeviceId() const;
+    void publishScanResults(const String &scanResults);
     void onWrite(NimBLECharacteristic *characteristic, NimBLEConnInfo &connectionInfo) override;
 };
 

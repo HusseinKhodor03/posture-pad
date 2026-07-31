@@ -1,5 +1,8 @@
 #include "BleProvisioner.h"
 
+#include <ArduinoJson.h>
+#include <WiFi.h>
+
 namespace
 {
     const char *SERVICE_UUID = "e1a87d62-5df4-42f4-9cf9-fe3b312a8d85";
@@ -8,9 +11,11 @@ namespace
     const char *WIFI_PASSWORD_UUID = "ff386352-081f-4803-b256-c0fba4085d2d";
     const char *COMMAND_UUID = "1d831e2f-0ca5-4bf4-9f84-39487ad6b635";
     const char *STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
+    const char *WIFI_SCAN_RESULTS_UUID = "7f9c0b60-9f79-46f6-8e2e-4f9c7d2c7c6d";
+    const int MAX_WIFI_SCAN_RESULTS = 6;
 }
 
-BleProvisioner::BleProvisioner() : started(false), connectionRequested(false), statusCharacteristic(nullptr) {}
+BleProvisioner::BleProvisioner() : started(false), connectionRequested(false), scanRequested(false), statusCharacteristic(nullptr), scanResultsCharacteristic(nullptr) {}
 
 void BleProvisioner::begin()
 {
@@ -29,6 +34,7 @@ void BleProvisioner::begin()
     NimBLECharacteristic *wifiPasswordCharacteristic = service->createCharacteristic(WIFI_PASSWORD_UUID, NIMBLE_PROPERTY::WRITE, 64);
     NimBLECharacteristic *commandCharacteristic = service->createCharacteristic(COMMAND_UUID, NIMBLE_PROPERTY::WRITE, 16);
     statusCharacteristic = service->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 24);
+    scanResultsCharacteristic = service->createCharacteristic(WIFI_SCAN_RESULTS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 512);
 
     wifiSsidCharacteristic->setCallbacks(this);
     wifiPasswordCharacteristic->setCallbacks(this);
@@ -36,6 +42,7 @@ void BleProvisioner::begin()
 
     deviceIdCharacteristic->setValue(deviceId.c_str());
     statusCharacteristic->setValue("unconfigured");
+    scanResultsCharacteristic->setValue("{\"status\":\"idle\",\"networks\":[]}");
     currentStatus = "unconfigured";
     service->start();
 
@@ -73,6 +80,11 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
             connectionRequested = true;
             Serial.println("Wi-Fi connection requested");
         }
+        else if (value == "scan_wifi")
+        {
+            scanRequested = true;
+            Serial.println("Wi-Fi scan requested");
+        }
         else if (value == "connect")
         {
             Serial.println("Ignored connect command: no Wi-Fi SSID received");
@@ -95,6 +107,48 @@ bool BleProvisioner::takeConnectionRequest(String &ssid, String &password)
     return true;
 }
 
+bool BleProvisioner::takeScanRequest()
+{
+    if (!scanRequested)
+        return false;
+
+    scanRequested = false;
+    return true;
+}
+
+void BleProvisioner::scanWifiNetworks()
+{
+    publishScanResults("{\"status\":\"scanning\",\"networks\":[]}");
+
+    int networkCount = WiFi.scanNetworks();
+
+    JsonDocument doc;
+    JsonArray networks = doc["networks"].to<JsonArray>();
+
+    if (networkCount < 0)
+    {
+        doc["status"] = "failed";
+    }
+    else
+    {
+        doc["status"] = "complete";
+        int resultCount = min(networkCount, MAX_WIFI_SCAN_RESULTS);
+
+        for (int i = 0; i < resultCount; i++)
+        {
+            JsonObject network = networks.add<JsonObject>();
+            network["ssid"] = WiFi.SSID(i);
+            network["rssi"] = WiFi.RSSI(i);
+            network["secure"] = WiFi.encryptionType(i) != WIFI_AUTH_OPEN;
+        }
+    }
+
+    String scanResults;
+    serializeJson(doc, scanResults);
+    publishScanResults(scanResults);
+    WiFi.scanDelete();
+}
+
 void BleProvisioner::setStatus(const String &status)
 {
     if (statusCharacteristic == nullptr || status == currentStatus)
@@ -108,6 +162,15 @@ void BleProvisioner::setStatus(const String &status)
 const String &BleProvisioner::getDeviceId() const
 {
     return deviceId;
+}
+
+void BleProvisioner::publishScanResults(const String &scanResults)
+{
+    if (scanResultsCharacteristic == nullptr)
+        return;
+
+    scanResultsCharacteristic->setValue(scanResults.c_str());
+    scanResultsCharacteristic->notify();
 }
 
 String BleProvisioner::buildDeviceId() const

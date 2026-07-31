@@ -35,6 +35,11 @@ void DeviceManager::update()
         saveCredentialsOnConnect = true;
     }
 
+    if (bleProvisioner.takeScanRequest())
+    {
+        bleProvisioner.scanWifiNetworks();
+    }
+
     networkManager.update();
 
     if (wifiConnectionPending && networkManager.isWifiConnected())
