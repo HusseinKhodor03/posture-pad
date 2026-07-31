@@ -12,7 +12,7 @@ namespace
     const char *COMMAND_UUID = "1d831e2f-0ca5-4bf4-9f84-39487ad6b635";
     const char *STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
     const char *WIFI_SCAN_RESULTS_UUID = "7f9c0b60-9f79-46f6-8e2e-4f9c7d2c7c6d";
-    const int MAX_WIFI_SCAN_RESULTS = 6;
+    const int MAX_WIFI_SCAN_RESULTS = 15;
 }
 
 BleProvisioner::BleProvisioner() : started(false), connectionRequested(false), scanRequested(false), statusCharacteristic(nullptr), scanResultsCharacteristic(nullptr) {}
@@ -34,7 +34,7 @@ void BleProvisioner::begin()
     NimBLECharacteristic *wifiPasswordCharacteristic = service->createCharacteristic(WIFI_PASSWORD_UUID, NIMBLE_PROPERTY::WRITE, 64);
     NimBLECharacteristic *commandCharacteristic = service->createCharacteristic(COMMAND_UUID, NIMBLE_PROPERTY::WRITE, 16);
     statusCharacteristic = service->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 24);
-    scanResultsCharacteristic = service->createCharacteristic(WIFI_SCAN_RESULTS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 512);
+    scanResultsCharacteristic = service->createCharacteristic(WIFI_SCAN_RESULTS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 1024);
 
     wifiSsidCharacteristic->setCallbacks(this);
     wifiPasswordCharacteristic->setCallbacks(this);
@@ -132,14 +132,94 @@ void BleProvisioner::scanWifiNetworks()
     else
     {
         doc["status"] = "complete";
-        int resultCount = min(networkCount, MAX_WIFI_SCAN_RESULTS);
+        String scanSsids[MAX_WIFI_SCAN_RESULTS];
+        int scanRssis[MAX_WIFI_SCAN_RESULTS];
+        bool scanSecure[MAX_WIFI_SCAN_RESULTS];
+        int resultCount = 0;
+
+        for (int i = 0; i < networkCount; i++)
+        {
+            String ssid = WiFi.SSID(i);
+
+            if (ssid.isEmpty())
+                continue;
+
+            int rssi = WiFi.RSSI(i);
+            bool secure = WiFi.encryptionType(i) != WIFI_AUTH_OPEN;
+            int existingIndex = -1;
+
+            for (int j = 0; j < resultCount; j++)
+            {
+                if (scanSsids[j] == ssid)
+                {
+                    existingIndex = j;
+                    break;
+                }
+            }
+
+            if (existingIndex >= 0)
+            {
+                if (rssi > scanRssis[existingIndex])
+                {
+                    scanRssis[existingIndex] = rssi;
+                    scanSecure[existingIndex] = secure;
+                }
+
+                continue;
+            }
+
+            if (resultCount < MAX_WIFI_SCAN_RESULTS)
+            {
+                scanSsids[resultCount] = ssid;
+                scanRssis[resultCount] = rssi;
+                scanSecure[resultCount] = secure;
+                resultCount++;
+                continue;
+            }
+
+            int weakestIndex = 0;
+
+            for (int j = 1; j < resultCount; j++)
+            {
+                if (scanRssis[j] < scanRssis[weakestIndex])
+                    weakestIndex = j;
+            }
+
+            if (rssi > scanRssis[weakestIndex])
+            {
+                scanSsids[weakestIndex] = ssid;
+                scanRssis[weakestIndex] = rssi;
+                scanSecure[weakestIndex] = secure;
+            }
+        }
+
+        for (int i = 0; i < resultCount - 1; i++)
+        {
+            for (int j = i + 1; j < resultCount; j++)
+            {
+                if (scanRssis[j] > scanRssis[i])
+                {
+                    String tempSsid = scanSsids[i];
+                    int tempRssi = scanRssis[i];
+                    bool tempSecure = scanSecure[i];
+
+                    scanSsids[i] = scanSsids[j];
+                    scanRssis[i] = scanRssis[j];
+                    scanSecure[i] = scanSecure[j];
+
+                    scanSsids[j] = tempSsid;
+                    scanRssis[j] = tempRssi;
+                    scanSecure[j] = tempSecure;
+                }
+            }
+        }
 
         for (int i = 0; i < resultCount; i++)
         {
             JsonObject network = networks.add<JsonObject>();
-            network["ssid"] = WiFi.SSID(i);
-            network["rssi"] = WiFi.RSSI(i);
-            network["secure"] = WiFi.encryptionType(i) != WIFI_AUTH_OPEN;
+            network["ssid"] = scanSsids[i];
+            network["rssi"] = scanRssis[i];
+            network["secure"] = scanSecure[i];
         }
     }
 
