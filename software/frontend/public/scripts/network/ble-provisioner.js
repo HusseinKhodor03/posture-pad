@@ -251,11 +251,68 @@ export class BleProvisioner {
     networks.forEach((network) => {
       const networkItem = document.createElement("li");
       networkItem.className = "networkListItem";
-      networkItem.textContent = `${network.ssid} · ${network.rssi} dBm · ${
-        network.secure ? "Secured" : "Open"
+
+      const networkName = document.createElement("span");
+      networkName.className = "networkName";
+      networkName.textContent = network.ssid;
+
+      const networkIcons = document.createElement("span");
+      networkIcons.className = "networkIcons";
+
+      const lockIcon = document.createElement("span");
+      lockIcon.className = `networkIcon networkLockIcon ${
+        network.secure ? "secure" : "open"
       }`;
+      lockIcon.title = network.secure ? "Secured network" : "Open network";
+
+      const signalIcon = document.createElement("span");
+      signalIcon.className = `networkIcon networkSignalIcon ${this.getSignalClass(
+        network.rssi,
+      )}`;
+      signalIcon.title = this.getSignalLabel(network.rssi);
+
+      for (let barIndex = 0; barIndex < 4; barIndex += 1) {
+        const signalBar = document.createElement("span");
+        signalBar.className = "signalBar";
+        signalIcon.appendChild(signalBar);
+      }
+
+      networkIcons.append(lockIcon, signalIcon);
+      networkItem.append(networkName, networkIcons);
       this.networkList.appendChild(networkItem);
     });
+  }
+
+  getSignalClass(rssi) {
+    if (rssi >= -50) {
+      return "signalStrong";
+    }
+
+    if (rssi >= -67) {
+      return "signalMedium";
+    }
+
+    if (rssi >= -75) {
+      return "signalWeak";
+    }
+
+    return "signalPoor";
+  }
+
+  getSignalLabel(rssi) {
+    if (rssi >= -50) {
+      return "Strong signal";
+    }
+
+    if (rssi >= -67) {
+      return "Good signal";
+    }
+
+    if (rssi >= -75) {
+      return "Weak signal";
+    }
+
+    return "Poor signal";
   }
 
   handleDisconnect() {
