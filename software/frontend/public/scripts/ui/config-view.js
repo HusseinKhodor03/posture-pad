@@ -32,8 +32,7 @@ export function updateConfigView({
     forgetWifiButton.disabled = !isOnline;
     switchDeviceButton.hidden = false;
     switchDeviceButton.disabled = false;
-    networkListMessage.textContent =
-      "Scan nearby networks or enter a network manually.";
+    networkListMessage.textContent = "";
     scanNetworksButton.disabled = false;
     otherNetworkButton.disabled = false;
     return;

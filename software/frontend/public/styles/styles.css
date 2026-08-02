@@ -306,15 +306,26 @@ body.appBooting .tabPanel {
 }
 
 .networkList {
-  display: grid;
-  gap: 8px;
+  display: block;
   margin: 16px 0;
   padding: 0;
+  border: 1px solid #dfe4ea;
+  border-radius: 12px;
+  background: #fff;
   list-style: none;
+  overflow: hidden;
+}
+
+.networkList:empty {
+  display: none;
 }
 
 .networkListItem {
   margin: 0;
+}
+
+.networkListItem + .networkListItem {
+  border-top: 1px solid #eef2f6;
 }
 
 .networkListButton {
@@ -323,9 +334,9 @@ body.appBooting .tabPanel {
   align-items: center;
   gap: 16px;
   width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #dfe4ea;
-  border-radius: 10px;
+  padding: 13px 16px;
+  border: 0;
+  border-radius: 0;
   background: #fff;
   color: inherit;
   font: inherit;
@@ -340,15 +351,13 @@ body.appBooting .tabPanel {
 }
 
 .networkListButton:hover {
-  border-color: #b6c2d1;
   background: #f7fbff;
-  box-shadow: 0 2px 8px rgb(15 23 42 / 8%);
+  box-shadow: none;
 }
 
 .networkListButton.connected,
 .networkListButton.connected:hover,
 .networkListButton.connected:disabled {
-  border-color: #b7e4c7;
   background: #f0fdf4;
   color: #17202a;
   cursor: default;

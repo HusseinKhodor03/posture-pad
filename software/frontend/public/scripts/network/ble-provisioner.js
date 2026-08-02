@@ -319,7 +319,7 @@ export class BleProvisioner {
 
     this.scanNetworksButton.disabled = true;
     this.scanNetworksButton.textContent = "Scanning...";
-    this.networkListMessage.textContent = "Scanning nearby networks...";
+    this.networkListMessage.textContent = "";
     this.networkList.replaceChildren();
     this.scannedNetworks = [];
     this.pendingScanNetworks = [];
@@ -417,7 +417,7 @@ export class BleProvisioner {
     }
 
     if (scanResults.status === "scanning") {
-      this.networkListMessage.textContent = "Scanning nearby networks...";
+      this.networkListMessage.textContent = "";
       return;
     }
 
@@ -465,8 +465,7 @@ export class BleProvisioner {
       return;
     }
 
-    this.networkListMessage.textContent =
-      "Choose a network from the list below.";
+    this.networkListMessage.textContent = "";
 
     networks.forEach((network, index) => {
       const isConnectedNetwork = this.isConnectedNetwork(network);
