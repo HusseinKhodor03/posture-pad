@@ -25,9 +25,11 @@ export class BleProvisioner {
     this.setupSessionHeartbeat = null;
     this.selectedNetwork = null;
     this.scannedNetworks = [];
+    this.pendingScanNetworks = [];
     this.networkListSignature = "";
     this.bleDevice = null;
     this.isSwitchingDevice = false;
+    this.isScanningWifi = false;
   }
 
   init() {
@@ -311,8 +313,10 @@ export class BleProvisioner {
     this.networkListMessage.textContent = "Scanning nearby networks...";
     this.networkList.replaceChildren();
     this.scannedNetworks = [];
+    this.pendingScanNetworks = [];
     this.networkListSignature = "";
     this.closeWifiDialog();
+    this.isScanningWifi = true;
 
     try {
       await this.commandCharacteristic.writeValueWithResponse(
@@ -323,6 +327,21 @@ export class BleProvisioner {
       this.networkListMessage.textContent = "Could not scan Wi-Fi networks.";
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
+      this.isScanningWifi = false;
+    }
+  }
+
+  async requestScanPage(page) {
+    try {
+      await this.commandCharacteristic.writeValueWithResponse(
+        new TextEncoder().encode(`scan_page:${this.setupSessionId}:${page}`),
+      );
+    } catch (error) {
+      console.error("Could not request Wi-Fi scan page:", error);
+      this.networkListMessage.textContent = "Could not read Wi-Fi scan results.";
+      this.scanNetworksButton.disabled = false;
+      this.scanNetworksButton.textContent = "Scan Networks";
+      this.isScanningWifi = false;
     }
   }
 
@@ -370,7 +389,7 @@ export class BleProvisioner {
     let scanResults;
 
     try {
-      const value = await event.target.readValue();
+      const value = event.target.value;
       const scanResultText = new TextDecoder().decode(value);
       scanResults = JSON.parse(scanResultText);
     } catch (error) {
@@ -387,15 +406,29 @@ export class BleProvisioner {
       return;
     }
 
-    this.scanNetworksButton.disabled = false;
-    this.scanNetworksButton.textContent = "Scan Networks";
-
     if (scanResults.status !== "complete") {
       this.networkListMessage.textContent = "Could not scan Wi-Fi networks.";
+      this.scanNetworksButton.disabled = false;
+      this.scanNetworksButton.textContent = "Scan Networks";
+      this.isScanningWifi = false;
       return;
     }
 
-    this.renderNetworkList(scanResults.networks ?? []);
+    if (scanResults.page === 0) {
+      this.pendingScanNetworks = [];
+    }
+
+    this.pendingScanNetworks.push(...(scanResults.networks ?? []));
+
+    if (scanResults.has_more) {
+      await this.requestScanPage((scanResults.page ?? 0) + 1);
+      return;
+    }
+
+    this.scanNetworksButton.disabled = false;
+    this.scanNetworksButton.textContent = "Scan Networks";
+    this.isScanningWifi = false;
+    this.renderNetworkList(this.pendingScanNetworks);
   }
 
   renderNetworkList(networks) {
@@ -581,6 +614,7 @@ export class BleProvisioner {
     this.scanNetworksButton.textContent = "Scan Networks";
     this.networkList.replaceChildren();
     this.scannedNetworks = [];
+    this.pendingScanNetworks = [];
     this.networkListSignature = "";
 
     if (!this.isSwitchingDevice) {
@@ -628,6 +662,7 @@ export class BleProvisioner {
     this.scanNetworksButton.textContent = "Scan Networks";
     this.networkList.replaceChildren();
     this.scannedNetworks = [];
+    this.pendingScanNetworks = [];
     this.networkListSignature = "";
   }
 
@@ -648,7 +683,7 @@ export class BleProvisioner {
   }
 
   async sendSetupSessionHeartbeat() {
-    if (!this.commandCharacteristic || !this.setupSessionId) {
+    if (!this.commandCharacteristic || !this.setupSessionId || this.isScanningWifi) {
       return;
     }
 

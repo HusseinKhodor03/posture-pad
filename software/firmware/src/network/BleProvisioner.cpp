@@ -18,11 +18,10 @@ namespace
     const char *SETUP_SESSION_UUID = "0ad025b5-07ca-49a8-b3f7-03865f5f924f";
     const char *PREFERENCES_NAMESPACE = "posture-pad";
     const char *PAIRING_TOKEN_KEY = "pairing_token";
-    const int MAX_WIFI_SCAN_RESULTS = 15;
     const unsigned long SETUP_SESSION_TIMEOUT_MS = 15000;
 }
 
-BleProvisioner::BleProvisioner() : started(false), activeSetupSessionLastSeen(0), connectionRequested(false), scanRequested(false), forgetRequested(false), statusCharacteristic(nullptr), scanResultsCharacteristic(nullptr), setupSessionCharacteristic(nullptr) {}
+BleProvisioner::BleProvisioner() : started(false), activeSetupSessionLastSeen(0), connectionRequested(false), scanRequested(false), forgetRequested(false), statusCharacteristic(nullptr), scanResultsCharacteristic(nullptr), setupSessionCharacteristic(nullptr), scanResultCount(0) {}
 
 void BleProvisioner::begin()
 {
@@ -46,7 +45,7 @@ void BleProvisioner::begin()
     NimBLECharacteristic *wifiPasswordCharacteristic = service->createCharacteristic(WIFI_PASSWORD_UUID, NIMBLE_PROPERTY::WRITE, 64);
     NimBLECharacteristic *commandCharacteristic = service->createCharacteristic(COMMAND_UUID, NIMBLE_PROPERTY::WRITE, 24);
     statusCharacteristic = service->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 24);
-    scanResultsCharacteristic = service->createCharacteristic(WIFI_SCAN_RESULTS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 1024);
+    scanResultsCharacteristic = service->createCharacteristic(WIFI_SCAN_RESULTS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 512);
     setupSessionCharacteristic = service->createCharacteristic(SETUP_SESSION_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 24);
 
     wifiSsidCharacteristic->setCallbacks(this);
@@ -103,6 +102,8 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
         String releaseSession = getCommandSession(command, "release:");
         String pingSession = getCommandSession(command, "ping:");
         String scanSession = getCommandSession(command, "scan:");
+        String scanPageSession;
+        int scanPage = 0;
         String connectSession = getCommandSession(command, "connect:");
         String forgetSession = getCommandSession(command, "forget:");
 
@@ -123,6 +124,10 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
         {
             scanRequested = true;
             Serial.println("Wi-Fi scan requested");
+        }
+        else if (parseScanPageCommand(command, scanPageSession, scanPage) && setupSessionMatches(scanPageSession))
+        {
+            publishScanPage(scanPage);
         }
         else if (!connectSession.isEmpty() && setupSessionMatches(connectSession) && !pendingSsid.isEmpty())
         {
@@ -189,110 +194,94 @@ void BleProvisioner::scanWifiNetworks()
     WiFi.mode(WIFI_STA);
     int networkCount = WiFi.scanNetworks();
 
-    JsonDocument doc;
-    JsonArray networks = doc["networks"].to<JsonArray>();
-
     if (networkCount < 0)
     {
-        doc["status"] = "failed";
+        scanResultCount = 0;
+        publishScanResults("{\"status\":\"failed\",\"networks\":[]}");
+        WiFi.scanDelete();
+        return;
     }
-    else
+
+    scanResultCount = 0;
+
+    for (int i = 0; i < networkCount; i++)
     {
-        doc["status"] = "complete";
-        String scanSsids[MAX_WIFI_SCAN_RESULTS];
-        int scanRssis[MAX_WIFI_SCAN_RESULTS];
-        bool scanSecure[MAX_WIFI_SCAN_RESULTS];
-        int resultCount = 0;
+        String ssid = WiFi.SSID(i);
 
-        for (int i = 0; i < networkCount; i++)
+        if (ssid.isEmpty())
+            continue;
+
+        int rssi = WiFi.RSSI(i);
+        bool secure = WiFi.encryptionType(i) != WIFI_AUTH_OPEN;
+        int existingIndex = -1;
+
+        for (int j = 0; j < scanResultCount; j++)
         {
-            String ssid = WiFi.SSID(i);
-
-            if (ssid.isEmpty())
-                continue;
-
-            int rssi = WiFi.RSSI(i);
-            bool secure = WiFi.encryptionType(i) != WIFI_AUTH_OPEN;
-            int existingIndex = -1;
-
-            for (int j = 0; j < resultCount; j++)
+            if (scanSsids[j] == ssid)
             {
-                if (scanSsids[j] == ssid)
-                {
-                    existingIndex = j;
-                    break;
-                }
-            }
-
-            if (existingIndex >= 0)
-            {
-                if (rssi > scanRssis[existingIndex])
-                {
-                    scanRssis[existingIndex] = rssi;
-                    scanSecure[existingIndex] = secure;
-                }
-
-                continue;
-            }
-
-            if (resultCount < MAX_WIFI_SCAN_RESULTS)
-            {
-                scanSsids[resultCount] = ssid;
-                scanRssis[resultCount] = rssi;
-                scanSecure[resultCount] = secure;
-                resultCount++;
-                continue;
-            }
-
-            int weakestIndex = 0;
-
-            for (int j = 1; j < resultCount; j++)
-            {
-                if (scanRssis[j] < scanRssis[weakestIndex])
-                    weakestIndex = j;
-            }
-
-            if (rssi > scanRssis[weakestIndex])
-            {
-                scanSsids[weakestIndex] = ssid;
-                scanRssis[weakestIndex] = rssi;
-                scanSecure[weakestIndex] = secure;
+                existingIndex = j;
+                break;
             }
         }
 
-        for (int i = 0; i < resultCount - 1; i++)
+        if (existingIndex >= 0)
         {
-            for (int j = i + 1; j < resultCount; j++)
+            if (rssi > scanRssis[existingIndex])
             {
-                if (scanRssis[j] > scanRssis[i])
-                {
-                    String tempSsid = scanSsids[i];
-                    int tempRssi = scanRssis[i];
-                    bool tempSecure = scanSecure[i];
-
-                    scanSsids[i] = scanSsids[j];
-                    scanRssis[i] = scanRssis[j];
-                    scanSecure[i] = scanSecure[j];
-
-                    scanSsids[j] = tempSsid;
-                    scanRssis[j] = tempRssi;
-                    scanSecure[j] = tempSecure;
-                }
+                scanRssis[existingIndex] = rssi;
+                scanSecure[existingIndex] = secure;
             }
+
+            continue;
         }
 
-        for (int i = 0; i < resultCount; i++)
+        if (scanResultCount < MAX_WIFI_SCAN_RESULTS)
         {
-            JsonObject network = networks.add<JsonObject>();
-            network["ssid"] = scanSsids[i];
-            network["rssi"] = scanRssis[i];
-            network["secure"] = scanSecure[i];
+            scanSsids[scanResultCount] = ssid;
+            scanRssis[scanResultCount] = rssi;
+            scanSecure[scanResultCount] = secure;
+            scanResultCount++;
+            continue;
+        }
+
+        int weakestIndex = 0;
+
+        for (int j = 1; j < scanResultCount; j++)
+        {
+            if (scanRssis[j] < scanRssis[weakestIndex])
+                weakestIndex = j;
+        }
+
+        if (rssi > scanRssis[weakestIndex])
+        {
+            scanSsids[weakestIndex] = ssid;
+            scanRssis[weakestIndex] = rssi;
+            scanSecure[weakestIndex] = secure;
         }
     }
 
-    String scanResults;
-    serializeJson(doc, scanResults);
-    publishScanResults(scanResults);
+    for (int i = 0; i < scanResultCount - 1; i++)
+    {
+        for (int j = i + 1; j < scanResultCount; j++)
+        {
+            if (scanRssis[j] > scanRssis[i])
+            {
+                String tempSsid = scanSsids[i];
+                int tempRssi = scanRssis[i];
+                bool tempSecure = scanSecure[i];
+
+                scanSsids[i] = scanSsids[j];
+                scanRssis[i] = scanRssis[j];
+                scanSecure[i] = scanSecure[j];
+
+                scanSsids[j] = tempSsid;
+                scanRssis[j] = tempRssi;
+                scanSecure[j] = tempSecure;
+            }
+        }
+    }
+
+    publishScanPage(0);
     WiFi.scanDelete();
 }
 
@@ -314,6 +303,33 @@ const String &BleProvisioner::getDeviceId() const
 const String &BleProvisioner::getPairingToken() const
 {
     return pairingToken;
+}
+
+void BleProvisioner::publishScanPage(int page)
+{
+    if (page < 0)
+        page = 0;
+
+    int startIndex = page * WIFI_SCAN_PAGE_SIZE;
+    int endIndex = min(startIndex + WIFI_SCAN_PAGE_SIZE, scanResultCount);
+
+    JsonDocument doc;
+    doc["status"] = "complete";
+    doc["page"] = page;
+    doc["has_more"] = endIndex < scanResultCount;
+    JsonArray networks = doc["networks"].to<JsonArray>();
+
+    for (int i = startIndex; i < endIndex; i++)
+    {
+        JsonObject network = networks.add<JsonObject>();
+        network["ssid"] = scanSsids[i];
+        network["rssi"] = scanRssis[i];
+        network["secure"] = scanSecure[i];
+    }
+
+    String scanResults;
+    serializeJson(doc, scanResults);
+    publishScanResults(scanResults);
 }
 
 void BleProvisioner::publishScanResults(const String &scanResults)
@@ -384,6 +400,23 @@ String BleProvisioner::getCommandSession(const String &command, const String &pr
         return "";
 
     return command.substring(prefix.length());
+}
+
+bool BleProvisioner::parseScanPageCommand(const String &command, String &sessionId, int &page) const
+{
+    String value = getCommandSession(command, "scan_page:");
+
+    if (value.isEmpty())
+        return false;
+
+    int separatorIndex = value.indexOf(':');
+
+    if (separatorIndex < 0)
+        return false;
+
+    sessionId = value.substring(0, separatorIndex);
+    page = value.substring(separatorIndex + 1).toInt();
+    return true;
 }
 
 void BleProvisioner::claimSetupSession(const String &sessionId)
