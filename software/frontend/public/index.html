@@ -103,9 +103,12 @@
 
         <div id="wifiManagementSection" hidden>
           <div class="configWifiRow">
-            <p class="configWifiStatus" id="configWifiStatus">
-              Connected to Wi-Fi
-            </p>
+            <div class="configWifiStatus">
+              <span class="configWifiStatusLabel">Current Network</span>
+              <span class="configWifiStatusValue" id="configWifiStatus">
+                Not Connected
+              </span>
+            </div>
             <button
               class="connectButton dangerButton"
               id="forgetWifiButton"

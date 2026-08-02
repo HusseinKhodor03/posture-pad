@@ -215,14 +215,40 @@ body.appBooting .tabPanel {
 .configWifiRow {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
+  padding: 16px;
+  border: 1px solid #dfe4ea;
+  border-radius: 12px;
   margin: 14px 0;
+  background: #fafbfc;
 }
 
 .configWifiStatus {
+  display: grid;
+  gap: 6px;
   margin: 0;
+}
+
+.configWifiStatusLabel {
+  color: #667085;
+  font-size: 0.9rem;
   font-weight: 700;
+}
+
+.configWifiStatusValue {
+  color: #17202a;
+  font-weight: 700;
+}
+
+#forgetWifiButton {
+  min-width: 200px;
+}
+
+#forgetWifiButton[hidden] {
+  display: inline-block;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .configDivider {

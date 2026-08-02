@@ -24,10 +24,8 @@ export function updateConfigView({
       ? "This Posture Pad is connected and ready to stream data."
       : "Choose the Wi-Fi network this Posture Pad should use for streaming data.";
     configWifiStatus.textContent = isOnline
-      ? wifiSsid
-        ? `Connected to Wi-Fi: ${wifiSsid}`
-        : "Connected to Wi-Fi"
-      : "Not connected to Wi-Fi";
+      ? wifiSsid || "Connected"
+      : "Not Connected";
     setupSection.hidden = true;
     wifiManagementSection.hidden = false;
     forgetWifiButton.hidden = !isOnline;
