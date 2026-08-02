@@ -26,6 +26,7 @@ function main() {
   let selectedDeviceStatus = "offline";
   let selectedDeviceWifiSsid = "";
   let isSetupConnected = false;
+  let isScanningWifi = false;
   let heatmapsInitialized = false;
 
   const leftHeatmap = new HeatmapRenderer({
@@ -69,6 +70,7 @@ function main() {
     deviceLabel: selectedDeviceLabel,
     hasSelectedDevice: Boolean(selectedDeviceId),
     isOnline: selectedDeviceStatus === "online",
+    isScanningWifi,
     isSetupConnected,
     wifiSsid: selectedDeviceWifiSsid,
   });
@@ -96,6 +98,7 @@ function main() {
       deviceLabel: selectedDeviceLabel,
       hasSelectedDevice: Boolean(selectedDeviceId),
       isOnline: selectedDeviceStatus === "online",
+      isScanningWifi,
       isSetupConnected,
       wifiSsid: selectedDeviceWifiSsid,
     });
@@ -123,6 +126,7 @@ function main() {
         deviceLabel: selectedDeviceLabel,
         hasSelectedDevice: Boolean(selectedDeviceId),
         isOnline: selectedDeviceStatus === "online",
+        isScanningWifi,
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
@@ -144,6 +148,7 @@ function main() {
         deviceLabel: selectedDeviceLabel,
         hasSelectedDevice: Boolean(selectedDeviceId),
         isOnline: selectedDeviceStatus === "online",
+        isScanningWifi,
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
@@ -162,10 +167,22 @@ function main() {
         deviceLabel: selectedDeviceLabel,
         hasSelectedDevice: Boolean(selectedDeviceId),
         isOnline: false,
+        isScanningWifi,
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
       bleProvisioner?.setConnectedWifiSsid(selectedDeviceWifiSsid);
+    },
+    onWifiScanStateChanged: (scanState) => {
+      isScanningWifi = scanState;
+      updateConfigView({
+        deviceLabel: selectedDeviceLabel,
+        hasSelectedDevice: Boolean(selectedDeviceId),
+        isOnline: selectedDeviceStatus === "online",
+        isScanningWifi,
+        isSetupConnected,
+        wifiSsid: selectedDeviceWifiSsid,
+      });
     },
   });
   bleProvisioner.init();

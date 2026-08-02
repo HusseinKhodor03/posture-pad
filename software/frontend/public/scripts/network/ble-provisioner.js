@@ -12,10 +12,16 @@ import {
 import { createWifiSignalIcon } from "../ui/wifi-signal-icon.js";
 
 export class BleProvisioner {
-  constructor({ onDeviceConnected, onDeviceDisconnected, onWifiForgotten }) {
+  constructor({
+    onDeviceConnected,
+    onDeviceDisconnected,
+    onWifiForgotten,
+    onWifiScanStateChanged,
+  }) {
     this.onDeviceConnected = onDeviceConnected;
     this.onDeviceDisconnected = onDeviceDisconnected;
     this.onWifiForgotten = onWifiForgotten;
+    this.onWifiScanStateChanged = onWifiScanStateChanged;
     this.wifiSsidCharacteristic = null;
     this.wifiPasswordCharacteristic = null;
     this.commandCharacteristic = null;
@@ -314,7 +320,7 @@ export class BleProvisioner {
   }
 
   async scanWifiNetworks() {
-    if (!this.commandCharacteristic) {
+    if (!this.commandCharacteristic || this.isScanningWifi) {
       return;
     }
 
@@ -326,8 +332,7 @@ export class BleProvisioner {
     this.pendingScanNetworks = [];
     this.networkListSignature = "";
     this.closeWifiDialog();
-    this.isScanningWifi = true;
-    this.updateNetworkSpinner();
+    this.setWifiScanState(true);
 
     try {
       await this.commandCharacteristic.writeValueWithResponse(
@@ -338,8 +343,7 @@ export class BleProvisioner {
       this.networkListMessage.textContent = "Could not scan Wi-Fi networks.";
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
-      this.isScanningWifi = false;
-      this.updateNetworkSpinner();
+      this.setWifiScanState(false);
     }
   }
 
@@ -353,7 +357,7 @@ export class BleProvisioner {
       this.networkListMessage.textContent = "Could not read Wi-Fi scan results.";
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
-      this.isScanningWifi = false;
+      this.setWifiScanState(false);
     }
   }
 
@@ -416,8 +420,7 @@ export class BleProvisioner {
         "Could not read Wi-Fi scan results.";
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
-      this.isScanningWifi = false;
-      this.updateNetworkSpinner();
+      this.setWifiScanState(false);
       return;
     }
 
@@ -430,8 +433,7 @@ export class BleProvisioner {
       this.networkListMessage.textContent = "Could not scan Wi-Fi networks.";
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
-      this.isScanningWifi = false;
-      this.updateNetworkSpinner();
+      this.setWifiScanState(false);
       return;
     }
 
@@ -448,8 +450,7 @@ export class BleProvisioner {
 
     this.scanNetworksButton.disabled = false;
     this.scanNetworksButton.textContent = "Scan Networks";
-    this.isScanningWifi = false;
-    this.updateNetworkSpinner();
+    this.setWifiScanState(false);
     this.renderNetworkList(this.pendingScanNetworks);
   }
 
@@ -536,6 +537,12 @@ export class BleProvisioner {
 
   updateNetworkSpinner() {
     this.networkSpinner.hidden = !this.isScanningWifi;
+  }
+
+  setWifiScanState(isScanningWifi) {
+    this.isScanningWifi = isScanningWifi;
+    this.updateNetworkSpinner();
+    this.onWifiScanStateChanged?.(isScanningWifi);
   }
 
   selectNetwork(network) {

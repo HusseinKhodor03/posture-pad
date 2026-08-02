@@ -2,6 +2,7 @@ export function updateConfigView({
   deviceLabel,
   hasSelectedDevice,
   isOnline,
+  isScanningWifi = false,
   isSetupConnected,
   wifiSsid,
 }) {
@@ -33,7 +34,10 @@ export function updateConfigView({
     switchDeviceButton.hidden = false;
     switchDeviceButton.disabled = false;
     networkListMessage.textContent = "";
-    scanNetworksButton.disabled = false;
+    scanNetworksButton.disabled = isScanningWifi;
+    scanNetworksButton.textContent = isScanningWifi
+      ? "Scanning..."
+      : "Scan Networks";
     otherNetworkButton.disabled = false;
     return;
   }
