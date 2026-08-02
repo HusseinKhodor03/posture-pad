@@ -187,6 +187,7 @@ void BleProvisioner::scanWifiNetworks()
 {
     publishScanResults("{\"status\":\"scanning\",\"networks\":[]}");
 
+    WiFi.mode(WIFI_STA);
     int networkCount = WiFi.scanNetworks();
 
     JsonDocument doc;
