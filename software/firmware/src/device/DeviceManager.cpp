@@ -40,6 +40,14 @@ void DeviceManager::update()
         bleProvisioner.scanWifiNetworks();
     }
 
+    if (bleProvisioner.takeForgetRequest())
+    {
+        networkManager.forgetCredentials();
+        bleProvisioner.setStatus("unconfigured");
+        wifiConnectionPending = false;
+        saveCredentialsOnConnect = false;
+    }
+
     networkManager.update();
 
     if (wifiConnectionPending && networkManager.isWifiConnected())

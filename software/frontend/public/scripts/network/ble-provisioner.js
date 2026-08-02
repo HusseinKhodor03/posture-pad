@@ -12,9 +12,10 @@ import {
 import { createWifiSignalIcon } from "../ui/wifi-signal-icon.js";
 
 export class BleProvisioner {
-  constructor({ onDeviceConnected, onDeviceDisconnected }) {
+  constructor({ onDeviceConnected, onDeviceDisconnected, onWifiForgotten }) {
     this.onDeviceConnected = onDeviceConnected;
     this.onDeviceDisconnected = onDeviceDisconnected;
+    this.onWifiForgotten = onWifiForgotten;
     this.wifiSsidCharacteristic = null;
     this.wifiPasswordCharacteristic = null;
     this.commandCharacteristic = null;
@@ -44,6 +45,7 @@ export class BleProvisioner {
     this.cancelWifiButton = document.getElementById("cancelWifiButton");
     this.scanNetworksButton = document.getElementById("scanNetworksButton");
     this.otherNetworkButton = document.getElementById("otherNetworkButton");
+    this.forgetWifiButton = document.getElementById("forgetWifiButton");
     this.networkListMessage = document.getElementById("networkListMessage");
     this.networkList = document.getElementById("networkList");
 
@@ -65,6 +67,10 @@ export class BleProvisioner {
 
     this.otherNetworkButton.addEventListener("click", () => {
       this.openManualNetworkDialog();
+    });
+
+    this.forgetWifiButton.addEventListener("click", () => {
+      this.forgetWifiNetwork();
     });
 
     this.networkList.addEventListener("click", (event) => {
@@ -259,6 +265,32 @@ export class BleProvisioner {
       this.networkListMessage.textContent = "Could not scan Wi-Fi networks.";
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
+    }
+  }
+
+  async forgetWifiNetwork() {
+    if (!this.commandCharacteristic || !this.setupSessionId) {
+      return;
+    }
+
+    this.forgetWifiButton.disabled = true;
+    this.forgetWifiButton.textContent = "Forgetting...";
+    this.closeWifiDialog();
+
+    try {
+      await this.commandCharacteristic.writeValueWithResponse(
+        new TextEncoder().encode(`forget:${this.setupSessionId}`),
+      );
+      this.updateWifiStatus("unconfigured");
+      this.bleMessage.textContent =
+        "The saved Wi-Fi network was removed from this Posture Pad.";
+      this.onWifiForgotten?.();
+    } catch (error) {
+      console.error("Could not forget Wi-Fi network:", error);
+      this.bleMessage.textContent = "Could not forget the Wi-Fi network.";
+    } finally {
+      this.forgetWifiButton.disabled = false;
+      this.forgetWifiButton.textContent = "Forget Wi-Fi";
     }
   }
 
@@ -464,6 +496,7 @@ export class BleProvisioner {
     this.connectBleButton.textContent = "Reconnect Posture Pad";
     this.scanNetworksButton.disabled = true;
     this.otherNetworkButton.disabled = true;
+    this.forgetWifiButton.hidden = true;
     this.scanNetworksButton.textContent = "Scan Networks";
     this.networkList.replaceChildren();
     this.scannedNetworks = [];
@@ -506,6 +539,7 @@ export class BleProvisioner {
     this.connectWifiButton.disabled = true;
     this.scanNetworksButton.disabled = true;
     this.otherNetworkButton.disabled = true;
+    this.forgetWifiButton.hidden = true;
     this.scanNetworksButton.textContent = "Scan Networks";
     this.networkList.replaceChildren();
     this.scannedNetworks = [];

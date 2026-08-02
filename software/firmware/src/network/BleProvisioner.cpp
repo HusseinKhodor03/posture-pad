@@ -22,7 +22,7 @@ namespace
     const unsigned long SETUP_SESSION_TIMEOUT_MS = 15000;
 }
 
-BleProvisioner::BleProvisioner() : started(false), activeSetupSessionLastSeen(0), connectionRequested(false), scanRequested(false), statusCharacteristic(nullptr), scanResultsCharacteristic(nullptr), setupSessionCharacteristic(nullptr) {}
+BleProvisioner::BleProvisioner() : started(false), activeSetupSessionLastSeen(0), connectionRequested(false), scanRequested(false), forgetRequested(false), statusCharacteristic(nullptr), scanResultsCharacteristic(nullptr), setupSessionCharacteristic(nullptr) {}
 
 void BleProvisioner::begin()
 {
@@ -92,6 +92,7 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
         String pingSession = getCommandSession(command, "ping:");
         String scanSession = getCommandSession(command, "scan:");
         String connectSession = getCommandSession(command, "connect:");
+        String forgetSession = getCommandSession(command, "forget:");
 
         if (!claimSession.isEmpty())
         {
@@ -119,6 +120,10 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
         else if (!connectSession.isEmpty() && setupSessionMatches(connectSession))
         {
             Serial.println("Ignored connect command: no Wi-Fi SSID received");
+        }
+        else if (!forgetSession.isEmpty() && setupSessionMatches(forgetSession))
+        {
+            forgetRequested = true;
         }
     }
 }
@@ -150,6 +155,18 @@ bool BleProvisioner::takeScanRequest()
         return false;
 
     scanRequested = false;
+    return true;
+}
+
+bool BleProvisioner::takeForgetRequest()
+{
+    if (setupSessionExpired())
+        releaseSetupSession();
+
+    if (!forgetRequested)
+        return false;
+
+    forgetRequested = false;
     return true;
 }
 
@@ -393,6 +410,7 @@ void BleProvisioner::releaseSetupSession()
     pendingPassword = "";
     connectionRequested = false;
     scanRequested = false;
+    forgetRequested = false;
     publishSetupSessionStatus("available");
     NimBLEDevice::getAdvertising()->start();
 }

@@ -264,6 +264,16 @@ body.appBooting .tabPanel {
   color: #8a96a8;
 }
 
+.dangerButton {
+  margin-top: 8px;
+  background: #feecec;
+  color: #d92d20;
+}
+
+.dangerButton:hover:not(:disabled) {
+  background: #fdd8d8;
+}
+
 .networkList {
   display: grid;
   gap: 8px;

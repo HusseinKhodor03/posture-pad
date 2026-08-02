@@ -63,6 +63,31 @@ void NetworkManager::saveCredentials()
     Serial.println("Saved Wi-Fi credentials");
 }
 
+void NetworkManager::forgetCredentials()
+{
+    client.stop();
+    WiFi.disconnect();
+
+    ssid = "";
+    password = "";
+    lastWifiAttempt = 0;
+    lastTcpAttempt = 0;
+
+    Preferences preferences;
+
+    if (!preferences.begin(PREFERENCES_NAMESPACE, false))
+    {
+        Serial.println("Could not open Wi-Fi credential storage");
+        return;
+    }
+
+    preferences.remove(WIFI_SSID_KEY);
+    preferences.remove(WIFI_PASSWORD_KEY);
+    preferences.end();
+
+    Serial.println("Forgot Wi-Fi credentials");
+}
+
 void NetworkManager::update()
 {
     ensureWifiConnected();

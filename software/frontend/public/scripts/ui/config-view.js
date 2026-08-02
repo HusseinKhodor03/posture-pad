@@ -16,6 +16,7 @@ export function updateConfigView({
   const networkListMessage = document.getElementById("networkListMessage");
   const scanNetworksButton = document.getElementById("scanNetworksButton");
   const otherNetworkButton = document.getElementById("otherNetworkButton");
+  const forgetWifiButton = document.getElementById("forgetWifiButton");
 
   if (isSetupConnected) {
     bleStatus.textContent = "Setup";
@@ -30,6 +31,8 @@ export function updateConfigView({
       : "Not connected to Wi-Fi";
     setupSection.hidden = true;
     wifiManagementSection.hidden = false;
+    forgetWifiButton.hidden = !isOnline;
+    forgetWifiButton.disabled = !isOnline;
     networkListMessage.textContent =
       "Scan nearby networks or enter a network manually.";
     scanNetworksButton.disabled = false;
@@ -46,5 +49,6 @@ export function updateConfigView({
     : "Connect your Posture Pad to configure Wi-Fi.";
   setupSection.hidden = false;
   wifiManagementSection.hidden = true;
+  forgetWifiButton.hidden = true;
   otherNetworkButton.disabled = true;
 }

@@ -12,6 +12,7 @@ public:
     void connect(const String &ssid, const String &password);
     bool connectSavedCredentials();
     void saveCredentials();
+    void forgetCredentials();
     void update();
     bool isWifiConnected();
     bool isConnected();

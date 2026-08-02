@@ -144,6 +144,23 @@ function main() {
         wifiSsid: selectedDeviceWifiSsid,
       });
     },
+    onWifiForgotten: () => {
+      selectedDeviceStatus = "offline";
+      selectedDeviceWifiSsid = "";
+      leftHeatmap.resetSensorData();
+      rightHeatmap.resetSensorData();
+      updateDashboardView({
+        status: selectedDeviceStatus,
+        deviceLabel: selectedDeviceLabel,
+      });
+      updateConfigView({
+        deviceLabel: selectedDeviceLabel,
+        hasSelectedDevice: Boolean(selectedDeviceId),
+        isOnline: false,
+        isSetupConnected,
+        wifiSsid: selectedDeviceWifiSsid,
+      });
+    },
   });
   bleProvisioner.init();
 

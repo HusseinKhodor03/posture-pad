@@ -11,6 +11,7 @@ public:
     void begin();
     bool takeConnectionRequest(String &ssid, String &password);
     bool takeScanRequest();
+    bool takeForgetRequest();
     void scanWifiNetworks();
     void setStatus(const String &status);
     const String &getDeviceId() const;
@@ -24,6 +25,7 @@ private:
     String pendingPassword;
     bool connectionRequested;
     bool scanRequested;
+    bool forgetRequested;
     NimBLECharacteristic *statusCharacteristic;
     NimBLECharacteristic *scanResultsCharacteristic;
     NimBLECharacteristic *setupSessionCharacteristic;
