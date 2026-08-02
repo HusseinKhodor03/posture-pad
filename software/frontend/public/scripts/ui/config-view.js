@@ -17,6 +17,7 @@ export function updateConfigView({
   const scanNetworksButton = document.getElementById("scanNetworksButton");
   const otherNetworkButton = document.getElementById("otherNetworkButton");
   const forgetWifiButton = document.getElementById("forgetWifiButton");
+  const switchDeviceButton = document.getElementById("switchDeviceButton");
 
   if (isSetupConnected) {
     bleStatus.textContent = "Setup";
@@ -33,6 +34,8 @@ export function updateConfigView({
     wifiManagementSection.hidden = false;
     forgetWifiButton.hidden = !isOnline;
     forgetWifiButton.disabled = !isOnline;
+    switchDeviceButton.hidden = false;
+    switchDeviceButton.disabled = false;
     networkListMessage.textContent =
       "Scan nearby networks or enter a network manually.";
     scanNetworksButton.disabled = false;
@@ -51,4 +54,6 @@ export function updateConfigView({
   wifiManagementSection.hidden = true;
   forgetWifiButton.hidden = true;
   otherNetworkButton.disabled = true;
+  switchDeviceButton.hidden = true;
+  switchDeviceButton.disabled = true;
 }

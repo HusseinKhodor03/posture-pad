@@ -26,6 +26,8 @@ export class BleProvisioner {
     this.selectedNetwork = null;
     this.scannedNetworks = [];
     this.networkListSignature = "";
+    this.bleDevice = null;
+    this.isSwitchingDevice = false;
   }
 
   init() {
@@ -46,6 +48,7 @@ export class BleProvisioner {
     this.scanNetworksButton = document.getElementById("scanNetworksButton");
     this.otherNetworkButton = document.getElementById("otherNetworkButton");
     this.forgetWifiButton = document.getElementById("forgetWifiButton");
+    this.switchDeviceButton = document.getElementById("switchDeviceButton");
     this.networkListMessage = document.getElementById("networkListMessage");
     this.networkList = document.getElementById("networkList");
 
@@ -71,6 +74,10 @@ export class BleProvisioner {
 
     this.forgetWifiButton.addEventListener("click", () => {
       this.forgetWifiNetwork();
+    });
+
+    this.switchDeviceButton.addEventListener("click", () => {
+      this.switchDevice();
     });
 
     this.networkList.addEventListener("click", (event) => {
@@ -107,79 +114,8 @@ export class BleProvisioner {
       "Choose your Posture Pad from the browser prompt.";
 
     try {
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [{ services: [BLE_SERVICE_UUID] }],
-      });
-
-      const server = await device.gatt.connect();
-      const service = await server.getPrimaryService(BLE_SERVICE_UUID);
-      const deviceIdCharacteristic =
-        await service.getCharacteristic(DEVICE_ID_UUID);
-      const pairingTokenCharacteristic =
-        await service.getCharacteristic(PAIRING_TOKEN_UUID);
-      const statusCharacteristic =
-        await service.getCharacteristic(STATUS_UUID);
-      this.wifiSsidCharacteristic =
-        await service.getCharacteristic(WIFI_SSID_UUID);
-      this.wifiPasswordCharacteristic =
-        await service.getCharacteristic(WIFI_PASSWORD_UUID);
-      this.commandCharacteristic =
-        await service.getCharacteristic(COMMAND_UUID);
-      this.scanResultsCharacteristic =
-        await service.getCharacteristic(WIFI_SCAN_RESULTS_UUID);
-      this.setupSessionCharacteristic =
-        await service.getCharacteristic(SETUP_SESSION_UUID);
-
-      const deviceIdValue = await deviceIdCharacteristic.readValue();
-      const statusValue = await statusCharacteristic.readValue();
-      const decoder = new TextDecoder();
-      const deviceId = decoder.decode(deviceIdValue);
-
-      const setupSessionClaimed = await this.claimSetupSession(deviceId);
-
-      if (!setupSessionClaimed) {
-        this.showBusyDeviceMessage(deviceId);
-        device.gatt.disconnect();
-        return;
-      }
-
-      device.addEventListener("gattserverdisconnected", () => {
-        this.handleDisconnect();
-      });
-
-      const pairingTokenValue = await pairingTokenCharacteristic.readValue();
-
-      statusCharacteristic.addEventListener(
-        "characteristicvaluechanged",
-        (event) => {
-          this.handleWifiStatusChange(event);
-        },
-      );
-      await statusCharacteristic.startNotifications();
-      this.scanResultsCharacteristic.addEventListener(
-        "characteristicvaluechanged",
-        (event) => {
-          this.handleScanResultsChange(event);
-        },
-      );
-      await this.scanResultsCharacteristic.startNotifications();
-
-      const pairingToken = decoder.decode(pairingTokenValue);
-      this.onDeviceConnected(deviceId, pairingToken);
-
-      this.bleDeviceName.textContent = device.name;
-      this.bleDeviceId.textContent = deviceId;
-      this.bleDeviceDetails.hidden = false;
-      this.closeWifiDialog();
-      this.connectWifiButton.disabled = false;
-      this.otherNetworkButton.disabled = false;
-      this.bleStatus.textContent = "Setup";
-      this.bleMessage.textContent =
-        "Your Posture Pad is ready for Wi-Fi setup.";
-      this.updateWifiStatus(decoder.decode(statusValue));
-      this.connectBleButton.textContent = "Connected";
-      this.scanNetworksButton.disabled = false;
-      this.scanWifiNetworks();
+      const device = await this.requestBluetoothDevice();
+      await this.connectSelectedDevice(device);
     } catch (error) {
       console.error("Bluetooth connection failed:", error);
       await this.releaseSetupSession();
@@ -188,6 +124,127 @@ export class BleProvisioner {
       this.bleStatus.textContent = "Setup";
       this.bleMessage.textContent = "Could not connect to the Posture Pad.";
       this.connectBleButton.disabled = false;
+    }
+  }
+
+  async switchDevice() {
+    if (!navigator.bluetooth) {
+      this.bleStatus.textContent = "Bluetooth unavailable";
+      this.bleMessage.textContent =
+        "This browser does not support Web Bluetooth. Try Chrome or Edge.";
+      return;
+    }
+
+    this.switchDeviceButton.disabled = true;
+    this.bleMessage.textContent =
+      "Choose another Posture Pad from the browser prompt.";
+
+    try {
+      const device = await this.requestBluetoothDevice();
+
+      if (this.bleDevice?.id === device.id) {
+        this.bleMessage.textContent =
+          "This browser is already connected to that Posture Pad.";
+        this.switchDeviceButton.disabled = false;
+        return;
+      }
+
+      this.isSwitchingDevice = true;
+      await this.disconnectCurrentDeviceForSwitch();
+      await this.connectSelectedDevice(device);
+    } catch (error) {
+      console.error("Could not switch Posture Pads:", error);
+      this.bleMessage.textContent = "Could not switch Posture Pads.";
+      this.switchDeviceButton.disabled = false;
+    } finally {
+      this.isSwitchingDevice = false;
+    }
+  }
+
+  async requestBluetoothDevice() {
+    return navigator.bluetooth.requestDevice({
+      filters: [{ services: [BLE_SERVICE_UUID] }],
+    });
+  }
+
+  async connectSelectedDevice(device) {
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(BLE_SERVICE_UUID);
+    const deviceIdCharacteristic =
+      await service.getCharacteristic(DEVICE_ID_UUID);
+    const pairingTokenCharacteristic =
+      await service.getCharacteristic(PAIRING_TOKEN_UUID);
+    const statusCharacteristic = await service.getCharacteristic(STATUS_UUID);
+    this.wifiSsidCharacteristic =
+      await service.getCharacteristic(WIFI_SSID_UUID);
+    this.wifiPasswordCharacteristic =
+      await service.getCharacteristic(WIFI_PASSWORD_UUID);
+    this.commandCharacteristic = await service.getCharacteristic(COMMAND_UUID);
+    this.scanResultsCharacteristic =
+      await service.getCharacteristic(WIFI_SCAN_RESULTS_UUID);
+    this.setupSessionCharacteristic =
+      await service.getCharacteristic(SETUP_SESSION_UUID);
+
+    const deviceIdValue = await deviceIdCharacteristic.readValue();
+    const statusValue = await statusCharacteristic.readValue();
+    const decoder = new TextDecoder();
+    const deviceId = decoder.decode(deviceIdValue);
+
+    const setupSessionClaimed = await this.claimSetupSession(deviceId);
+
+    if (!setupSessionClaimed) {
+      this.showBusyDeviceMessage(deviceId);
+      device.gatt.disconnect();
+      return;
+    }
+
+    this.bleDevice = device;
+    device.addEventListener("gattserverdisconnected", () => {
+      this.handleDisconnect(device);
+    });
+
+    const pairingTokenValue = await pairingTokenCharacteristic.readValue();
+
+    statusCharacteristic.addEventListener(
+      "characteristicvaluechanged",
+      (event) => {
+        this.handleWifiStatusChange(event);
+      },
+    );
+    await statusCharacteristic.startNotifications();
+    this.scanResultsCharacteristic.addEventListener(
+      "characteristicvaluechanged",
+      (event) => {
+        this.handleScanResultsChange(event);
+      },
+    );
+    await this.scanResultsCharacteristic.startNotifications();
+
+    const pairingToken = decoder.decode(pairingTokenValue);
+    this.onDeviceConnected(deviceId, pairingToken);
+
+    this.bleDeviceName.textContent = device.name;
+    this.bleDeviceId.textContent = deviceId;
+    this.bleDeviceDetails.hidden = false;
+    this.closeWifiDialog();
+    this.connectWifiButton.disabled = false;
+    this.otherNetworkButton.disabled = false;
+    this.switchDeviceButton.disabled = false;
+    this.bleStatus.textContent = "Setup";
+    this.bleMessage.textContent = "Your Posture Pad is ready for Wi-Fi setup.";
+    this.updateWifiStatus(decoder.decode(statusValue));
+    this.connectBleButton.textContent = "Connected";
+    this.scanNetworksButton.disabled = false;
+    this.scanWifiNetworks();
+  }
+
+  async disconnectCurrentDeviceForSwitch() {
+    await this.releaseSetupSession();
+    this.stopSetupSessionHeartbeat();
+    this.setupSessionId = "";
+
+    if (this.bleDevice?.gatt.connected) {
+      this.bleDevice.gatt.disconnect();
     }
   }
 
@@ -479,9 +536,14 @@ export class BleProvisioner {
     return "Poor signal";
   }
 
-  handleDisconnect() {
+  handleDisconnect(device) {
+    if (device && this.bleDevice && device.id !== this.bleDevice.id) {
+      return;
+    }
+
     this.stopSetupSessionHeartbeat();
     this.setupSessionId = "";
+    this.bleDevice = null;
     this.wifiSsidCharacteristic = null;
     this.wifiPasswordCharacteristic = null;
     this.commandCharacteristic = null;
@@ -496,12 +558,17 @@ export class BleProvisioner {
     this.connectBleButton.textContent = "Reconnect Posture Pad";
     this.scanNetworksButton.disabled = true;
     this.otherNetworkButton.disabled = true;
+    this.switchDeviceButton.hidden = true;
+    this.switchDeviceButton.disabled = true;
     this.forgetWifiButton.hidden = true;
     this.scanNetworksButton.textContent = "Scan Networks";
     this.networkList.replaceChildren();
     this.scannedNetworks = [];
     this.networkListSignature = "";
-    this.onDeviceDisconnected?.();
+
+    if (!this.isSwitchingDevice) {
+      this.onDeviceDisconnected?.();
+    }
   }
 
   async claimSetupSession(deviceId) {
@@ -539,6 +606,8 @@ export class BleProvisioner {
     this.connectWifiButton.disabled = true;
     this.scanNetworksButton.disabled = true;
     this.otherNetworkButton.disabled = true;
+    this.switchDeviceButton.hidden = true;
+    this.switchDeviceButton.disabled = true;
     this.forgetWifiButton.hidden = true;
     this.scanNetworksButton.textContent = "Scan Networks";
     this.networkList.replaceChildren();
