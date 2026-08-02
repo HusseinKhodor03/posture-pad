@@ -55,6 +55,7 @@ export class BleProvisioner {
     this.otherNetworkButton = document.getElementById("otherNetworkButton");
     this.forgetWifiButton = document.getElementById("forgetWifiButton");
     this.switchDeviceButton = document.getElementById("switchDeviceButton");
+    this.networkSpinner = document.getElementById("networkSpinner");
     this.networkListMessage = document.getElementById("networkListMessage");
     this.networkList = document.getElementById("networkList");
 
@@ -326,6 +327,7 @@ export class BleProvisioner {
     this.networkListSignature = "";
     this.closeWifiDialog();
     this.isScanningWifi = true;
+    this.updateNetworkSpinner();
 
     try {
       await this.commandCharacteristic.writeValueWithResponse(
@@ -337,6 +339,7 @@ export class BleProvisioner {
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
       this.isScanningWifi = false;
+      this.updateNetworkSpinner();
     }
   }
 
@@ -413,6 +416,8 @@ export class BleProvisioner {
         "Could not read Wi-Fi scan results.";
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
+      this.isScanningWifi = false;
+      this.updateNetworkSpinner();
       return;
     }
 
@@ -426,6 +431,7 @@ export class BleProvisioner {
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
       this.isScanningWifi = false;
+      this.updateNetworkSpinner();
       return;
     }
 
@@ -443,6 +449,7 @@ export class BleProvisioner {
     this.scanNetworksButton.disabled = false;
     this.scanNetworksButton.textContent = "Scan Networks";
     this.isScanningWifi = false;
+    this.updateNetworkSpinner();
     this.renderNetworkList(this.pendingScanNetworks);
   }
 
@@ -525,6 +532,10 @@ export class BleProvisioner {
         return `${network.ssid}|${security}|${signalLevel}|${connection}`;
       })
       .join("\n");
+  }
+
+  updateNetworkSpinner() {
+    this.networkSpinner.hidden = !this.isScanningWifi;
   }
 
   selectNetwork(network) {

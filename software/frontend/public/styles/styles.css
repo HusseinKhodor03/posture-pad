@@ -305,6 +305,91 @@ body.appBooting .tabPanel {
   background: #fdd8d8;
 }
 
+.networkTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.networkTitleRow h3 {
+  margin: 0;
+}
+
+.networkSpinner {
+  position: relative;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+}
+
+.networkSpinner[hidden] {
+  display: none;
+}
+
+.networkSpinner span {
+  position: absolute;
+  top: 1px;
+  left: 9px;
+  width: 2px;
+  height: 6px;
+  border-radius: 999px;
+  background: #667085;
+  opacity: 0.2;
+  transform-origin: 1px 9px;
+  animation: networkSpinnerFade 800ms linear infinite;
+}
+
+.networkSpinner span:nth-child(1) {
+  transform: rotate(0deg);
+  animation-delay: -700ms;
+}
+
+.networkSpinner span:nth-child(2) {
+  transform: rotate(45deg);
+  animation-delay: -600ms;
+}
+
+.networkSpinner span:nth-child(3) {
+  transform: rotate(90deg);
+  animation-delay: -500ms;
+}
+
+.networkSpinner span:nth-child(4) {
+  transform: rotate(135deg);
+  animation-delay: -400ms;
+}
+
+.networkSpinner span:nth-child(5) {
+  transform: rotate(180deg);
+  animation-delay: -300ms;
+}
+
+.networkSpinner span:nth-child(6) {
+  transform: rotate(225deg);
+  animation-delay: -200ms;
+}
+
+.networkSpinner span:nth-child(7) {
+  transform: rotate(270deg);
+  animation-delay: -100ms;
+}
+
+.networkSpinner span:nth-child(8) {
+  transform: rotate(315deg);
+  animation-delay: 0ms;
+}
+
+@keyframes networkSpinnerFade {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.2;
+  }
+}
+
 .networkList {
   display: block;
   margin: 16px 0;
