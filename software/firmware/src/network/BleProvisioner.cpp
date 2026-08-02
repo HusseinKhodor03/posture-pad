@@ -15,12 +15,14 @@ namespace
     const char *STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
     const char *WIFI_SCAN_RESULTS_UUID = "7f9c0b60-9f79-46f6-8e2e-4f9c7d2c7c6d";
     const char *PAIRING_TOKEN_UUID = "8be0ef6e-118a-4bd3-90b7-83bcaea35b7f";
+    const char *SETUP_SESSION_UUID = "0ad025b5-07ca-49a8-b3f7-03865f5f924f";
     const char *PREFERENCES_NAMESPACE = "posture-pad";
     const char *PAIRING_TOKEN_KEY = "pairing_token";
     const int MAX_WIFI_SCAN_RESULTS = 15;
+    const unsigned long SETUP_SESSION_TIMEOUT_MS = 15000;
 }
 
-BleProvisioner::BleProvisioner() : started(false), connectionRequested(false), scanRequested(false), statusCharacteristic(nullptr), scanResultsCharacteristic(nullptr) {}
+BleProvisioner::BleProvisioner() : started(false), activeSetupSessionLastSeen(0), connectionRequested(false), scanRequested(false), statusCharacteristic(nullptr), scanResultsCharacteristic(nullptr), setupSessionCharacteristic(nullptr) {}
 
 void BleProvisioner::begin()
 {
@@ -39,9 +41,10 @@ void BleProvisioner::begin()
     NimBLECharacteristic *pairingTokenCharacteristic = service->createCharacteristic(PAIRING_TOKEN_UUID, NIMBLE_PROPERTY::READ, 32);
     NimBLECharacteristic *wifiSsidCharacteristic = service->createCharacteristic(WIFI_SSID_UUID, NIMBLE_PROPERTY::WRITE, 32);
     NimBLECharacteristic *wifiPasswordCharacteristic = service->createCharacteristic(WIFI_PASSWORD_UUID, NIMBLE_PROPERTY::WRITE, 64);
-    NimBLECharacteristic *commandCharacteristic = service->createCharacteristic(COMMAND_UUID, NIMBLE_PROPERTY::WRITE, 16);
+    NimBLECharacteristic *commandCharacteristic = service->createCharacteristic(COMMAND_UUID, NIMBLE_PROPERTY::WRITE, 24);
     statusCharacteristic = service->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 24);
     scanResultsCharacteristic = service->createCharacteristic(WIFI_SCAN_RESULTS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 1024);
+    setupSessionCharacteristic = service->createCharacteristic(SETUP_SESSION_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 24);
 
     wifiSsidCharacteristic->setCallbacks(this);
     wifiPasswordCharacteristic->setCallbacks(this);
@@ -51,6 +54,7 @@ void BleProvisioner::begin()
     pairingTokenCharacteristic->setValue(pairingToken.c_str());
     statusCharacteristic->setValue("unconfigured");
     scanResultsCharacteristic->setValue("{\"status\":\"idle\",\"networks\":[]}");
+    setupSessionCharacteristic->setValue("available");
     currentStatus = "unconfigured";
     service->start();
 
@@ -81,19 +85,38 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
     }
     else if (uuid == NimBLEUUID(COMMAND_UUID))
     {
-        Serial.printf("Received BLE command: %s\n", value.c_str());
+        String command = value.c_str();
 
-        if (value == "connect" && !pendingSsid.isEmpty())
+        String claimSession = getCommandSession(command, "claim:");
+        String releaseSession = getCommandSession(command, "release:");
+        String pingSession = getCommandSession(command, "ping:");
+        String scanSession = getCommandSession(command, "scan:");
+        String connectSession = getCommandSession(command, "connect:");
+
+        if (!claimSession.isEmpty())
         {
-            connectionRequested = true;
-            Serial.println("Wi-Fi connection requested");
+            claimSetupSession(claimSession);
         }
-        else if (value == "scan_wifi")
+        else if (!releaseSession.isEmpty() && setupSessionMatches(releaseSession))
+        {
+            releaseSetupSession();
+        }
+        else if (!pingSession.isEmpty() && setupSessionMatches(pingSession))
+        {
+            activeSetupSessionLastSeen = millis();
+            publishSetupSessionStatus("claimed:" + activeSetupSession);
+        }
+        else if (!scanSession.isEmpty() && setupSessionMatches(scanSession))
         {
             scanRequested = true;
             Serial.println("Wi-Fi scan requested");
         }
-        else if (value == "connect")
+        else if (!connectSession.isEmpty() && setupSessionMatches(connectSession) && !pendingSsid.isEmpty())
+        {
+            connectionRequested = true;
+            Serial.println("Wi-Fi connection requested");
+        }
+        else if (!connectSession.isEmpty() && setupSessionMatches(connectSession))
         {
             Serial.println("Ignored connect command: no Wi-Fi SSID received");
         }
@@ -102,6 +125,9 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
 
 bool BleProvisioner::takeConnectionRequest(String &ssid, String &password)
 {
+    if (setupSessionExpired())
+        releaseSetupSession();
+
     if (!connectionRequested)
         return false;
 
@@ -117,6 +143,9 @@ bool BleProvisioner::takeConnectionRequest(String &ssid, String &password)
 
 bool BleProvisioner::takeScanRequest()
 {
+    if (setupSessionExpired())
+        releaseSetupSession();
+
     if (!scanRequested)
         return false;
 
@@ -301,4 +330,78 @@ String BleProvisioner::createPairingToken() const
 
     token[32] = '\0';
     return String(token);
+}
+
+bool BleProvisioner::setupSessionExpired() const
+{
+    return !activeSetupSession.isEmpty() && millis() - activeSetupSessionLastSeen > SETUP_SESSION_TIMEOUT_MS;
+}
+
+bool BleProvisioner::setupSessionMatches(const String &sessionId)
+{
+    if (setupSessionExpired())
+    {
+        releaseSetupSession();
+        return false;
+    }
+
+    return !sessionId.isEmpty() && sessionId == activeSetupSession;
+}
+
+String BleProvisioner::getCommandSession(const String &command, const String &prefix) const
+{
+    if (!command.startsWith(prefix))
+        return "";
+
+    return command.substring(prefix.length());
+}
+
+void BleProvisioner::claimSetupSession(const String &sessionId)
+{
+    if (sessionId.isEmpty())
+    {
+        publishSetupSessionStatus("busy");
+        return;
+    }
+
+    if (setupSessionExpired())
+        releaseSetupSession();
+
+    if (activeSetupSession.isEmpty() || activeSetupSession == sessionId)
+    {
+        activeSetupSession = sessionId;
+        activeSetupSessionLastSeen = millis();
+        publishSetupSessionStatus("claimed:" + activeSetupSession);
+        NimBLEDevice::getAdvertising()->stop();
+        return;
+    }
+
+    publishSetupSessionStatus("busy");
+}
+
+void BleProvisioner::releaseSetupSession()
+{
+    if (activeSetupSession.isEmpty())
+    {
+        publishSetupSessionStatus("available");
+        return;
+    }
+
+    activeSetupSession = "";
+    activeSetupSessionLastSeen = 0;
+    pendingSsid = "";
+    pendingPassword = "";
+    connectionRequested = false;
+    scanRequested = false;
+    publishSetupSessionStatus("available");
+    NimBLEDevice::getAdvertising()->start();
+}
+
+void BleProvisioner::publishSetupSessionStatus(const String &status)
+{
+    if (setupSessionCharacteristic == nullptr)
+        return;
+
+    setupSessionCharacteristic->setValue(status.c_str());
+    setupSessionCharacteristic->notify();
 }

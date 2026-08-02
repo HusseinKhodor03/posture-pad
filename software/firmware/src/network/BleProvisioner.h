@@ -18,12 +18,15 @@ public:
 
 private:
     bool started;
+    String activeSetupSession;
+    unsigned long activeSetupSessionLastSeen;
     String pendingSsid;
     String pendingPassword;
     bool connectionRequested;
     bool scanRequested;
     NimBLECharacteristic *statusCharacteristic;
     NimBLECharacteristic *scanResultsCharacteristic;
+    NimBLECharacteristic *setupSessionCharacteristic;
     String currentStatus;
     String deviceId;
     String pairingToken;
@@ -31,7 +34,13 @@ private:
     String buildDeviceId() const;
     String loadPairingToken() const;
     String createPairingToken() const;
+    bool setupSessionExpired() const;
+    bool setupSessionMatches(const String &sessionId);
+    String getCommandSession(const String &command, const String &prefix) const;
+    void claimSetupSession(const String &sessionId);
+    void releaseSetupSession();
     void publishScanResults(const String &scanResults);
+    void publishSetupSessionStatus(const String &status);
     void onWrite(NimBLECharacteristic *characteristic, NimBLEConnInfo &connectionInfo) override;
 };
 

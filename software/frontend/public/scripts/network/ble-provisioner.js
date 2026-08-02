@@ -3,6 +3,7 @@ import {
   COMMAND_UUID,
   DEVICE_ID_UUID,
   PAIRING_TOKEN_UUID,
+  SETUP_SESSION_UUID,
   STATUS_UUID,
   WIFI_PASSWORD_UUID,
   WIFI_SCAN_RESULTS_UUID,
@@ -18,6 +19,9 @@ export class BleProvisioner {
     this.wifiPasswordCharacteristic = null;
     this.commandCharacteristic = null;
     this.scanResultsCharacteristic = null;
+    this.setupSessionCharacteristic = null;
+    this.setupSessionId = "";
+    this.setupSessionHeartbeat = null;
     this.selectedNetwork = null;
     this.scannedNetworks = [];
     this.networkListSignature = "";
@@ -77,6 +81,10 @@ export class BleProvisioner {
         this.selectNetwork(network);
       }
     });
+
+    window.addEventListener("pagehide", () => {
+      this.releaseSetupSession();
+    });
   }
 
   async connectDevice() {
@@ -97,10 +105,6 @@ export class BleProvisioner {
         filters: [{ services: [BLE_SERVICE_UUID] }],
       });
 
-      device.addEventListener("gattserverdisconnected", () => {
-        this.handleDisconnect();
-      });
-
       const server = await device.gatt.connect();
       const service = await server.getPrimaryService(BLE_SERVICE_UUID);
       const deviceIdCharacteristic =
@@ -117,11 +121,27 @@ export class BleProvisioner {
         await service.getCharacteristic(COMMAND_UUID);
       this.scanResultsCharacteristic =
         await service.getCharacteristic(WIFI_SCAN_RESULTS_UUID);
+      this.setupSessionCharacteristic =
+        await service.getCharacteristic(SETUP_SESSION_UUID);
 
       const deviceIdValue = await deviceIdCharacteristic.readValue();
-      const pairingTokenValue = await pairingTokenCharacteristic.readValue();
       const statusValue = await statusCharacteristic.readValue();
       const decoder = new TextDecoder();
+      const deviceId = decoder.decode(deviceIdValue);
+
+      const setupSessionClaimed = await this.claimSetupSession(deviceId);
+
+      if (!setupSessionClaimed) {
+        this.showBusyDeviceMessage(deviceId);
+        device.gatt.disconnect();
+        return;
+      }
+
+      device.addEventListener("gattserverdisconnected", () => {
+        this.handleDisconnect();
+      });
+
+      const pairingTokenValue = await pairingTokenCharacteristic.readValue();
 
       statusCharacteristic.addEventListener(
         "characteristicvaluechanged",
@@ -138,7 +158,6 @@ export class BleProvisioner {
       );
       await this.scanResultsCharacteristic.startNotifications();
 
-      const deviceId = decoder.decode(deviceIdValue);
       const pairingToken = decoder.decode(pairingTokenValue);
       this.onDeviceConnected(deviceId, pairingToken);
 
@@ -157,6 +176,9 @@ export class BleProvisioner {
       this.scanWifiNetworks();
     } catch (error) {
       console.error("Bluetooth connection failed:", error);
+      await this.releaseSetupSession();
+      this.stopSetupSessionHeartbeat();
+      this.setupSessionId = "";
       this.bleStatus.textContent = "Setup";
       this.bleMessage.textContent = "Could not connect to the Posture Pad.";
       this.connectBleButton.disabled = false;
@@ -194,7 +216,7 @@ export class BleProvisioner {
         passwordValue,
       );
       await this.commandCharacteristic.writeValueWithResponse(
-        encoder.encode("connect"),
+        encoder.encode(`connect:${this.setupSessionId}`),
       );
       this.wifiSsid.value = "";
       this.wifiPassword.value = "";
@@ -230,7 +252,7 @@ export class BleProvisioner {
 
     try {
       await this.commandCharacteristic.writeValueWithResponse(
-        new TextEncoder().encode("scan_wifi"),
+        new TextEncoder().encode(`scan:${this.setupSessionId}`),
       );
     } catch (error) {
       console.error("Could not start Wi-Fi scan:", error);
@@ -426,10 +448,13 @@ export class BleProvisioner {
   }
 
   handleDisconnect() {
+    this.stopSetupSessionHeartbeat();
+    this.setupSessionId = "";
     this.wifiSsidCharacteristic = null;
     this.wifiPasswordCharacteristic = null;
     this.commandCharacteristic = null;
     this.scanResultsCharacteristic = null;
+    this.setupSessionCharacteristic = null;
     this.bleStatus.textContent = "Setup";
     this.bleMessage.textContent =
       "Connect your Posture Pad to configure Wi-Fi.";
@@ -444,5 +469,100 @@ export class BleProvisioner {
     this.scannedNetworks = [];
     this.networkListSignature = "";
     this.onDeviceDisconnected?.();
+  }
+
+  async claimSetupSession(deviceId) {
+    this.setupSessionId = this.createSetupSessionId();
+
+    await this.commandCharacteristic.writeValueWithResponse(
+      new TextEncoder().encode(`claim:${this.setupSessionId}`),
+    );
+
+    const sessionStatusValue = await this.setupSessionCharacteristic.readValue();
+    const sessionStatus = new TextDecoder().decode(sessionStatusValue);
+    const expectedStatus = `claimed:${this.setupSessionId}`;
+
+    if (sessionStatus !== expectedStatus) {
+      console.warn(
+        `Posture Pad ${deviceId} setup session rejected: ${sessionStatus}`,
+      );
+      this.setupSessionId = "";
+      return false;
+    }
+
+    this.startSetupSessionHeartbeat();
+    return true;
+  }
+
+  showBusyDeviceMessage(deviceId) {
+    this.bleStatus.textContent = "In use";
+    this.bleDeviceName.textContent = `Posture Pad ${deviceId.slice(-6)}`;
+    this.bleMessage.textContent =
+      "This Posture Pad is already being configured in another browser.";
+    this.bleDeviceDetails.hidden = true;
+    this.closeWifiDialog();
+    this.connectBleButton.disabled = false;
+    this.connectBleButton.textContent = "Try Again";
+    this.connectWifiButton.disabled = true;
+    this.scanNetworksButton.disabled = true;
+    this.otherNetworkButton.disabled = true;
+    this.scanNetworksButton.textContent = "Scan Networks";
+    this.networkList.replaceChildren();
+    this.scannedNetworks = [];
+    this.networkListSignature = "";
+  }
+
+  startSetupSessionHeartbeat() {
+    this.stopSetupSessionHeartbeat();
+    this.setupSessionHeartbeat = window.setInterval(() => {
+      this.sendSetupSessionHeartbeat();
+    }, 5000);
+  }
+
+  stopSetupSessionHeartbeat() {
+    if (!this.setupSessionHeartbeat) {
+      return;
+    }
+
+    window.clearInterval(this.setupSessionHeartbeat);
+    this.setupSessionHeartbeat = null;
+  }
+
+  async sendSetupSessionHeartbeat() {
+    if (!this.commandCharacteristic || !this.setupSessionId) {
+      return;
+    }
+
+    try {
+      await this.commandCharacteristic.writeValueWithResponse(
+        new TextEncoder().encode(`ping:${this.setupSessionId}`),
+      );
+    } catch (error) {
+      console.error("Could not refresh BLE setup session:", error);
+    }
+  }
+
+  async releaseSetupSession() {
+    if (!this.commandCharacteristic || !this.setupSessionId) {
+      return;
+    }
+
+    try {
+      await this.commandCharacteristic.writeValueWithResponse(
+        new TextEncoder().encode(`release:${this.setupSessionId}`),
+      );
+    } catch {
+      // The page may already be unloading or the BLE link may already be gone.
+    }
+  }
+
+  createSetupSessionId() {
+    const bytes = new Uint8Array(4);
+    crypto.getRandomValues(bytes);
+
+    return Array.from(bytes)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase();
   }
 }
