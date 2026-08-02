@@ -212,8 +212,16 @@ body.appBooting .tabPanel {
   line-height: 1.6;
 }
 
-.configWifiStatus {
+.configWifiRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
   margin: 14px 0;
+}
+
+.configWifiStatus {
+  margin: 0;
   font-weight: 700;
 }
 
@@ -263,7 +271,6 @@ body.appBooting .tabPanel {
 }
 
 .dangerButton {
-  margin-top: 8px;
   background: #feecec;
   color: #d92d20;
 }

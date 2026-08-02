@@ -348,7 +348,7 @@ export class BleProvisioner {
       this.bleMessage.textContent = "Could not forget the Wi-Fi network.";
     } finally {
       this.forgetWifiButton.disabled = false;
-      this.forgetWifiButton.textContent = "Forget Wi-Fi";
+      this.forgetWifiButton.textContent = "Forget This Network...";
     }
   }
 
