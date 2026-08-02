@@ -73,6 +73,8 @@ function main() {
     wifiSsid: selectedDeviceWifiSsid,
   });
 
+  let bleProvisioner = null;
+
   const dashboardWebSocket = new DashboardWebSocket((dashboardState) => {
     selectedDeviceStatus = dashboardState.status;
 
@@ -97,11 +99,12 @@ function main() {
       isSetupConnected,
       wifiSsid: selectedDeviceWifiSsid,
     });
+    bleProvisioner?.setConnectedWifiSsid(selectedDeviceWifiSsid);
   });
   dashboardWebSocket.subscribeToDevice(selectedDeviceId);
   dashboardWebSocket.connect();
 
-  const bleProvisioner = new BleProvisioner({
+  bleProvisioner = new BleProvisioner({
     onDeviceConnected: (deviceId, authToken) => {
       const isSameDevice = selectedDeviceId === deviceId;
       selectedDeviceId = deviceId;
@@ -123,6 +126,7 @@ function main() {
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
+      bleProvisioner?.setConnectedWifiSsid(selectedDeviceWifiSsid);
     },
     onDeviceDisconnected: () => {
       selectedDeviceStatus = "offline";
@@ -143,6 +147,7 @@ function main() {
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
+      bleProvisioner?.setConnectedWifiSsid(selectedDeviceWifiSsid);
     },
     onWifiForgotten: () => {
       selectedDeviceStatus = "offline";
@@ -160,9 +165,11 @@ function main() {
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
+      bleProvisioner?.setConnectedWifiSsid(selectedDeviceWifiSsid);
     },
   });
   bleProvisioner.init();
+  bleProvisioner.setConnectedWifiSsid(selectedDeviceWifiSsid);
 
   const drawHeatmaps = () => {
     leftHeatmap.draw();

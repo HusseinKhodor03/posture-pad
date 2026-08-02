@@ -27,6 +27,7 @@ export class BleProvisioner {
     this.scannedNetworks = [];
     this.pendingScanNetworks = [];
     this.networkListSignature = "";
+    this.connectedWifiSsid = "";
     this.bleDevice = null;
     this.isSwitchingDevice = false;
     this.isScanningWifi = false;
@@ -454,13 +455,17 @@ export class BleProvisioner {
       "Choose a network from the list below.";
 
     networks.forEach((network, index) => {
+      const isConnectedNetwork = this.isConnectedNetwork(network);
       const networkItem = document.createElement("li");
       networkItem.className = "networkListItem";
 
       const networkButton = document.createElement("button");
-      networkButton.className = "networkListButton";
+      networkButton.className = `networkListButton ${
+        isConnectedNetwork ? "connected" : ""
+      }`;
       networkButton.type = "button";
       networkButton.dataset.networkIndex = index;
+      networkButton.disabled = isConnectedNetwork;
 
       const networkName = document.createElement("span");
       networkName.className = "networkName";
@@ -468,6 +473,13 @@ export class BleProvisioner {
 
       const networkIcons = document.createElement("span");
       networkIcons.className = "networkIcons";
+
+      if (isConnectedNetwork) {
+        const connectedLabel = document.createElement("span");
+        connectedLabel.className = "networkConnectedLabel";
+        connectedLabel.textContent = "Connected";
+        networkIcons.appendChild(connectedLabel);
+      }
 
       const lockIcon = document.createElement("span");
       lockIcon.className = `networkIcon networkLockIcon ${
@@ -494,12 +506,22 @@ export class BleProvisioner {
       .map((network) => {
         const security = network.secure ? "secure" : "open";
         const signalLevel = this.getSignalLevel(network.rssi);
-        return `${network.ssid}|${security}|${signalLevel}`;
+        const connection = this.isConnectedNetwork(network)
+          ? "connected"
+          : "available";
+        return `${network.ssid}|${security}|${signalLevel}|${connection}`;
       })
       .join("\n");
   }
 
   selectNetwork(network) {
+    if (this.isConnectedNetwork(network)) {
+      this.closeWifiDialog();
+      this.networkListMessage.textContent =
+        `${network.ssid} is already connected.`;
+      return;
+    }
+
     this.selectedNetwork = network;
 
     if (!network.secure) {
@@ -585,6 +607,18 @@ export class BleProvisioner {
     }
 
     return "Poor signal";
+  }
+
+  setConnectedWifiSsid(wifiSsid) {
+    this.connectedWifiSsid = wifiSsid || "";
+    this.renderNetworkList(this.scannedNetworks);
+  }
+
+  isConnectedNetwork(network) {
+    return (
+      this.connectedWifiSsid.length > 0 &&
+      network.ssid === this.connectedWifiSsid
+    );
   }
 
   handleDisconnect(device) {

@@ -319,6 +319,17 @@ body.appBooting .tabPanel {
   box-shadow: 0 2px 8px rgb(15 23 42 / 8%);
 }
 
+.networkListButton.connected,
+.networkListButton.connected:hover,
+.networkListButton.connected:disabled {
+  border-color: #b7e4c7;
+  background: #f0fdf4;
+  color: #17202a;
+  cursor: default;
+  opacity: 1;
+  box-shadow: none;
+}
+
 .networkListButton:focus-visible {
   outline: 2px solid #1769e0;
   outline-offset: 2px;
@@ -342,6 +353,12 @@ body.appBooting .tabPanel {
   gap: 12px;
   flex: 0 0 auto;
   color: #344054;
+}
+
+.networkConnectedLabel {
+  color: #15803d;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .networkIcon {
