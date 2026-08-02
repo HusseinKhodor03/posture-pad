@@ -44,11 +44,16 @@ private:
     FormattedPostureMetrics formattedPostureMetrics;
 
     unsigned long lastBlinkTime;
+    unsigned long wifiConnectionStartedAt;
     bool ledState;
     bool wifiConnectionPending;
     bool saveCredentialsOnConnect;
+    bool rollbackCredentialsAvailable;
+    String rollbackSsid;
+    String rollbackPassword;
 
     void updateLed();
+    void handleWifiConnectionTimeout();
 };
 
 #endif

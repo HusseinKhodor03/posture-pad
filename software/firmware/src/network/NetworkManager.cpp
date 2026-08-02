@@ -27,13 +27,25 @@ void NetworkManager::connect(const String &newSsid, const String &newPassword)
 
 bool NetworkManager::connectSavedCredentials()
 {
+    String savedSsid;
+    String savedPassword;
+
+    if (!loadSavedCredentials(savedSsid, savedPassword))
+        return false;
+
+    connect(savedSsid, savedPassword);
+    return true;
+}
+
+bool NetworkManager::loadSavedCredentials(String &savedSsid, String &savedPassword) const
+{
     Preferences preferences;
 
     if (!preferences.begin(PREFERENCES_NAMESPACE, true))
         return false;
 
-    String savedSsid = preferences.getString(WIFI_SSID_KEY, "");
-    String savedPassword = preferences.getString(WIFI_PASSWORD_KEY, "");
+    savedSsid = preferences.getString(WIFI_SSID_KEY, "");
+    savedPassword = preferences.getString(WIFI_PASSWORD_KEY, "");
     preferences.end();
 
     if (savedSsid.isEmpty())
@@ -42,7 +54,6 @@ bool NetworkManager::connectSavedCredentials()
         return false;
     }
 
-    connect(savedSsid, savedPassword);
     return true;
 }
 
@@ -63,7 +74,7 @@ void NetworkManager::saveCredentials()
     Serial.println("Saved Wi-Fi credentials");
 }
 
-void NetworkManager::forgetCredentials()
+void NetworkManager::stopConnection()
 {
     client.stop();
     WiFi.disconnect();
@@ -72,6 +83,11 @@ void NetworkManager::forgetCredentials()
     password = "";
     lastWifiAttempt = 0;
     lastTcpAttempt = 0;
+}
+
+void NetworkManager::forgetCredentials()
+{
+    stopConnection();
 
     Preferences preferences;
 

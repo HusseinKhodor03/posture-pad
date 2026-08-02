@@ -1,6 +1,6 @@
 #include "DeviceManager.h"
 
-DeviceManager::DeviceManager(const char *host, int port) : sensorReader(muxController), networkManager(host, port), tcpClient(networkManager.getClient()), lastBlinkTime(0), ledState(false), wifiConnectionPending(false), saveCredentialsOnConnect(false) {}
+DeviceManager::DeviceManager(const char *host, int port) : sensorReader(muxController), networkManager(host, port), tcpClient(networkManager.getClient()), lastBlinkTime(0), wifiConnectionStartedAt(0), ledState(false), wifiConnectionPending(false), saveCredentialsOnConnect(false), rollbackCredentialsAvailable(false) {}
 
 void DeviceManager::init()
 {
@@ -17,6 +17,7 @@ void DeviceManager::init()
     {
         bleProvisioner.setStatus("connecting");
         wifiConnectionPending = true;
+        wifiConnectionStartedAt = millis();
     }
 
     Serial.println("Posture Pad Initialized!");
@@ -29,9 +30,11 @@ void DeviceManager::update()
 
     if (bleProvisioner.takeConnectionRequest(provisionedSsid, provisionedPassword))
     {
+        rollbackCredentialsAvailable = networkManager.loadSavedCredentials(rollbackSsid, rollbackPassword);
         networkManager.connect(provisionedSsid, provisionedPassword);
         bleProvisioner.setStatus("connecting");
         wifiConnectionPending = true;
+        wifiConnectionStartedAt = millis();
         saveCredentialsOnConnect = true;
     }
 
@@ -46,9 +49,13 @@ void DeviceManager::update()
         bleProvisioner.setStatus("unconfigured");
         wifiConnectionPending = false;
         saveCredentialsOnConnect = false;
+        rollbackCredentialsAvailable = false;
+        rollbackSsid = "";
+        rollbackPassword = "";
     }
 
     networkManager.update();
+    handleWifiConnectionTimeout();
 
     if (wifiConnectionPending && networkManager.isWifiConnected())
     {
@@ -60,6 +67,9 @@ void DeviceManager::update()
 
         bleProvisioner.setStatus("connected");
         wifiConnectionPending = false;
+        rollbackCredentialsAvailable = false;
+        rollbackSsid = "";
+        rollbackPassword = "";
         Serial.println("Connected to Wi-Fi!");
     }
 
@@ -86,6 +96,32 @@ void DeviceManager::update()
 
     String json = jsonSerializer.serialize(bleProvisioner.getDeviceId(), bleProvisioner.getPairingToken(), networkManager.getSsid(), formattedLeftFoot, formattedRightFoot, formattedPostureMetrics, postureAnalysis);
     tcpClient.send(json);
+}
+
+void DeviceManager::handleWifiConnectionTimeout()
+{
+    if (!wifiConnectionPending || !saveCredentialsOnConnect)
+        return;
+
+    if (millis() - wifiConnectionStartedAt < WIFI_CONNECT_TIMEOUT_MS)
+        return;
+
+    saveCredentialsOnConnect = false;
+
+    if (rollbackCredentialsAvailable)
+    {
+        networkManager.connect(rollbackSsid, rollbackPassword);
+        bleProvisioner.setStatus("connecting");
+        wifiConnectionStartedAt = millis();
+        rollbackCredentialsAvailable = false;
+        rollbackSsid = "";
+        rollbackPassword = "";
+        return;
+    }
+
+    networkManager.stopConnection();
+    bleProvisioner.setStatus("unconfigured");
+    wifiConnectionPending = false;
 }
 
 void DeviceManager::updateLed()

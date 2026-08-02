@@ -11,7 +11,9 @@ public:
     NetworkManager(const char *host, int port);
     void connect(const String &ssid, const String &password);
     bool connectSavedCredentials();
+    bool loadSavedCredentials(String &savedSsid, String &savedPassword) const;
     void saveCredentials();
+    void stopConnection();
     void forgetCredentials();
     void update();
     bool isWifiConnected();
