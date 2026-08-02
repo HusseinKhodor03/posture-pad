@@ -122,11 +122,13 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
         }
         else if (!scanSession.isEmpty() && setupSessionMatches(scanSession))
         {
+            activeSetupSessionLastSeen = millis();
             scanRequested = true;
             Serial.println("Wi-Fi scan requested");
         }
         else if (parseScanPageCommand(command, scanPageSession, scanPage) && setupSessionMatches(scanPageSession))
         {
+            activeSetupSessionLastSeen = millis();
             publishScanPage(scanPage);
         }
         else if (!connectSession.isEmpty() && setupSessionMatches(connectSession) && !pendingSsid.isEmpty())
@@ -171,6 +173,7 @@ bool BleProvisioner::takeScanRequest()
     if (!scanRequested)
         return false;
 
+    activeSetupSessionLastSeen = millis();
     scanRequested = false;
     return true;
 }
@@ -189,10 +192,12 @@ bool BleProvisioner::takeForgetRequest()
 
 void BleProvisioner::scanWifiNetworks()
 {
+    activeSetupSessionLastSeen = millis();
     publishScanResults("{\"status\":\"scanning\",\"networks\":[]}");
 
     WiFi.mode(WIFI_STA);
     int networkCount = WiFi.scanNetworks();
+    activeSetupSessionLastSeen = millis();
 
     if (networkCount < 0)
     {
@@ -307,6 +312,8 @@ const String &BleProvisioner::getPairingToken() const
 
 void BleProvisioner::publishScanPage(int page)
 {
+    activeSetupSessionLastSeen = millis();
+
     if (page < 0)
         page = 0;
 

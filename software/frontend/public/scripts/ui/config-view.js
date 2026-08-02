@@ -33,7 +33,6 @@ export function updateConfigView({
     forgetWifiButton.disabled = !isOnline;
     switchDeviceButton.hidden = false;
     switchDeviceButton.disabled = false;
-    networkListMessage.textContent = "";
     scanNetworksButton.disabled = isScanningWifi;
     scanNetworksButton.textContent = isScanningWifi
       ? "Scanning..."

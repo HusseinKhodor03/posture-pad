@@ -7,6 +7,7 @@ import {
   STATUS_UUID,
   WIFI_PASSWORD_UUID,
   WIFI_SCAN_RESULTS_UUID,
+  WIFI_SCAN_TIMEOUT_MS,
   WIFI_SSID_UUID,
 } from "../config/constants.js";
 import { createWifiSignalIcon } from "../ui/wifi-signal-icon.js";
@@ -29,6 +30,7 @@ export class BleProvisioner {
     this.setupSessionCharacteristic = null;
     this.setupSessionId = "";
     this.setupSessionHeartbeat = null;
+    this.wifiScanTimeout = null;
     this.selectedNetwork = null;
     this.scannedNetworks = [];
     this.pendingScanNetworks = [];
@@ -425,7 +427,9 @@ export class BleProvisioner {
     }
 
     if (scanResults.status === "scanning") {
-      this.networkListMessage.textContent = "";
+      if (this.isScanningWifi) {
+        this.networkListMessage.textContent = "";
+      }
       return;
     }
 
@@ -462,6 +466,10 @@ export class BleProvisioner {
     this.scannedNetworks = networks;
 
     if (!networkListChanged) {
+      if (networks.length) {
+        this.networkListMessage.textContent = "";
+      }
+
       return;
     }
 
@@ -541,8 +549,40 @@ export class BleProvisioner {
 
   setWifiScanState(isScanningWifi) {
     this.isScanningWifi = isScanningWifi;
+
+    if (isScanningWifi) {
+      this.startWifiScanTimeout();
+    } else {
+      this.stopWifiScanTimeout();
+    }
+
     this.updateNetworkSpinner();
     this.onWifiScanStateChanged?.(isScanningWifi);
+  }
+
+  startWifiScanTimeout() {
+    this.stopWifiScanTimeout();
+    this.wifiScanTimeout = window.setTimeout(() => {
+      if (!this.isScanningWifi) {
+        return;
+      }
+
+      this.networkListMessage.textContent =
+        "Wi-Fi scan timed out. Try scanning again.";
+      this.scanNetworksButton.disabled = false;
+      this.scanNetworksButton.textContent = "Scan Networks";
+      this.pendingScanNetworks = [];
+      this.setWifiScanState(false);
+    }, WIFI_SCAN_TIMEOUT_MS);
+  }
+
+  stopWifiScanTimeout() {
+    if (!this.wifiScanTimeout) {
+      return;
+    }
+
+    window.clearTimeout(this.wifiScanTimeout);
+    this.wifiScanTimeout = null;
   }
 
   selectNetwork(network) {
@@ -690,6 +730,7 @@ export class BleProvisioner {
       return;
     }
 
+    this.setWifiScanState(false);
     this.stopSetupSessionHeartbeat();
     this.setupSessionId = "";
     this.bleDevice = null;
@@ -792,6 +833,7 @@ export class BleProvisioner {
   }
 
   showBusyDeviceMessage(deviceId) {
+    this.setWifiScanState(false);
     this.bleDeviceName.textContent = `Posture Pad ${deviceId.slice(-6)}`;
     this.bleMessage.textContent =
       "This Posture Pad is already being configured in another browser.";
