@@ -36,6 +36,9 @@ void BleProvisioner::begin()
     NimBLEDevice::init(deviceName.c_str());
 
     NimBLEServer *server = NimBLEDevice::createServer();
+    server->setCallbacks(this);
+    server->advertiseOnDisconnect(true);
+
     NimBLEService *service = server->createService(SERVICE_UUID);
     NimBLECharacteristic *deviceIdCharacteristic = service->createCharacteristic(DEVICE_ID_UUID, NIMBLE_PROPERTY::READ);
     NimBLECharacteristic *pairingTokenCharacteristic = service->createCharacteristic(PAIRING_TOKEN_UUID, NIMBLE_PROPERTY::READ, 32);
@@ -66,6 +69,16 @@ void BleProvisioner::begin()
 
     started = true;
     Serial.printf("BLE device available as %s\n", deviceName.c_str());
+}
+
+void BleProvisioner::onConnect(NimBLEServer *server, NimBLEConnInfo &)
+{
+    server->stopAdvertising();
+}
+
+void BleProvisioner::onDisconnect(NimBLEServer *, NimBLEConnInfo &, int)
+{
+    releaseSetupSession();
 }
 
 void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInfo &)
@@ -389,7 +402,6 @@ void BleProvisioner::claimSetupSession(const String &sessionId)
         activeSetupSession = sessionId;
         activeSetupSessionLastSeen = millis();
         publishSetupSessionStatus("claimed:" + activeSetupSession);
-        NimBLEDevice::getAdvertising()->stop();
         return;
     }
 
@@ -412,7 +424,6 @@ void BleProvisioner::releaseSetupSession()
     scanRequested = false;
     forgetRequested = false;
     publishSetupSessionStatus("available");
-    NimBLEDevice::getAdvertising()->start();
 }
 
 void BleProvisioner::publishSetupSessionStatus(const String &status)

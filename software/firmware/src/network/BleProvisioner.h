@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <NimBLEDevice.h>
 
-class BleProvisioner : private NimBLECharacteristicCallbacks
+class BleProvisioner : private NimBLECharacteristicCallbacks, private NimBLEServerCallbacks
 {
 public:
     BleProvisioner();
@@ -43,6 +43,8 @@ private:
     void releaseSetupSession();
     void publishScanResults(const String &scanResults);
     void publishSetupSessionStatus(const String &status);
+    void onConnect(NimBLEServer *server, NimBLEConnInfo &connectionInfo) override;
+    void onDisconnect(NimBLEServer *server, NimBLEConnInfo &connectionInfo, int reason) override;
     void onWrite(NimBLECharacteristic *characteristic, NimBLEConnInfo &connectionInfo) override;
 };
 
