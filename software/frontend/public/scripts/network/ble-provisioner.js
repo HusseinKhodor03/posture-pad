@@ -28,9 +28,12 @@ export class BleProvisioner {
     this.pendingScanNetworks = [];
     this.networkListSignature = "";
     this.connectedWifiSsid = "";
+    this.pendingWifiSsid = "";
+    this.wifiConnectionInterrupted = false;
     this.bleDevice = null;
     this.isSwitchingDevice = false;
     this.isScanningWifi = false;
+    this.isConnectingWifi = false;
   }
 
   init() {
@@ -42,6 +45,7 @@ export class BleProvisioner {
     this.bleDeviceStatus = document.getElementById("bleDeviceStatus");
     this.wifiDialog = document.getElementById("wifiDialog");
     this.wifiDialogTitle = document.getElementById("wifiDialogTitle");
+    this.wifiDialogMessage = document.getElementById("wifiDialogMessage");
     this.wifiSsidLabel = document.getElementById("wifiSsidLabel");
     this.wifiSsid = document.getElementById("wifiSsid");
     this.wifiPassword = document.getElementById("wifiPassword");
@@ -272,12 +276,20 @@ export class BleProvisioner {
       return;
     }
 
+    if (this.isConnectedSsid(ssid)) {
+      this.showWifiDialogMessage(`"${ssid}" is already connected.`, true);
+      this.updateWifiConnectButton();
+      this.wifiPassword.focus();
+      return;
+    }
+
     if (button) {
       button.disabled = true;
       button.textContent = "Connecting...";
     }
 
     try {
+      this.startWifiConnectionAttempt(ssid);
       await this.wifiSsidCharacteristic.writeValueWithResponse(ssidValue);
       await this.wifiPasswordCharacteristic.writeValueWithResponse(
         passwordValue,
@@ -285,22 +297,18 @@ export class BleProvisioner {
       await this.commandCharacteristic.writeValueWithResponse(
         encoder.encode(`connect:${this.setupSessionId}`),
       );
-      this.wifiSsid.value = "";
-      this.wifiPassword.value = "";
-      this.closeWifiDialog();
 
       if (this.bleDeviceStatus.textContent === "unconfigured") {
         this.bleMessage.textContent =
           "Wi-Fi credentials sent to the Posture Pad.";
       }
     } catch (error) {
+      this.showWifiConnectionError(
+        ssid,
+        `Could not send Wi-Fi credentials for "${ssid}".`,
+      );
       console.error("Could not send Wi-Fi credentials:", error);
       this.bleMessage.textContent = "Could not send the Wi-Fi credentials.";
-    } finally {
-      if (button) {
-        button.textContent = "Connect";
-        this.updateWifiConnectButton();
-      }
     }
   }
 
@@ -379,6 +387,12 @@ export class BleProvisioner {
       this.bleMessage.textContent = "The Posture Pad is connecting to Wi-Fi...";
     } else if (status === "connected") {
       this.bleMessage.textContent = "The Posture Pad is connected to Wi-Fi.";
+    } else if (status === "unconfigured" && this.pendingWifiSsid) {
+      this.wifiConnectionInterrupted = true;
+      this.showWifiConnectionError(
+        this.pendingWifiSsid,
+        `Could not connect to "${this.pendingWifiSsid}". Check the password and try again.`,
+      );
     }
   }
 
@@ -535,10 +549,12 @@ export class BleProvisioner {
 
   openSelectedNetworkDialog(network) {
     this.wifiDialogTitle.textContent = `Connect to ${network.ssid}`;
+    this.clearWifiDialogMessage();
     this.wifiSsidLabel.hidden = true;
     this.wifiSsid.value = network.ssid;
     this.wifiPassword.value = "";
     this.wifiDialog.hidden = false;
+    this.isConnectingWifi = false;
     this.updateWifiConnectButton();
     this.wifiPassword.focus();
   }
@@ -546,25 +562,32 @@ export class BleProvisioner {
   openManualNetworkDialog() {
     this.selectedNetwork = null;
     this.wifiDialogTitle.textContent = "Other Network";
+    this.clearWifiDialogMessage();
     this.wifiSsidLabel.hidden = false;
     this.wifiSsid.value = "";
     this.wifiPassword.value = "";
     this.wifiDialog.hidden = false;
+    this.isConnectingWifi = false;
     this.updateWifiConnectButton();
     this.wifiSsid.focus();
   }
 
   closeWifiDialog() {
+    if (this.isConnectingWifi) {
+      return;
+    }
+
     this.selectedNetwork = null;
     this.wifiDialog.hidden = true;
     this.wifiSsidLabel.hidden = false;
     this.wifiSsid.value = "";
     this.wifiPassword.value = "";
+    this.clearWifiDialogMessage();
     this.updateWifiConnectButton();
   }
 
   updateWifiConnectButton() {
-    if (this.wifiDialog.hidden) {
+    if (this.wifiDialog.hidden || this.isConnectingWifi) {
       this.connectWifiButton.disabled = true;
       return;
     }
@@ -610,14 +633,38 @@ export class BleProvisioner {
   }
 
   setConnectedWifiSsid(wifiSsid) {
+    const previousWifiSsid = this.connectedWifiSsid;
     this.connectedWifiSsid = wifiSsid || "";
+
+    if (this.pendingWifiSsid && !this.connectedWifiSsid) {
+      this.wifiConnectionInterrupted = true;
+    }
+
+    if (this.pendingWifiSsid && this.connectedWifiSsid) {
+      if (this.connectedWifiSsid === this.pendingWifiSsid) {
+        this.finishWifiConnectionAttempt();
+      } else if (
+        this.wifiConnectionInterrupted &&
+        this.connectedWifiSsid !== previousWifiSsid
+      ) {
+        this.showWifiConnectionError(
+          this.pendingWifiSsid,
+          `Could not connect to "${this.pendingWifiSsid}". Check the password and try again.`,
+        );
+      }
+    }
+
     this.renderNetworkList(this.scannedNetworks);
   }
 
   isConnectedNetwork(network) {
+    return this.isConnectedSsid(network.ssid);
+  }
+
+  isConnectedSsid(ssid) {
     return (
       this.connectedWifiSsid.length > 0 &&
-      network.ssid === this.connectedWifiSsid
+      ssid === this.connectedWifiSsid
     );
   }
 
@@ -634,6 +681,9 @@ export class BleProvisioner {
     this.commandCharacteristic = null;
     this.scanResultsCharacteristic = null;
     this.setupSessionCharacteristic = null;
+    this.pendingWifiSsid = "";
+    this.wifiConnectionInterrupted = false;
+    this.isConnectingWifi = false;
     this.bleMessage.textContent =
       "Connect your Posture Pad to configure Wi-Fi.";
     this.closeWifiDialog();
@@ -654,6 +704,51 @@ export class BleProvisioner {
     if (!this.isSwitchingDevice) {
       this.onDeviceDisconnected?.();
     }
+  }
+
+  startWifiConnectionAttempt(ssid) {
+    this.pendingWifiSsid = ssid;
+    this.wifiConnectionInterrupted = false;
+    this.isConnectingWifi = true;
+    this.wifiDialogMessage.classList.remove("error");
+    this.wifiDialogMessage.textContent = `Connecting to "${ssid}"...`;
+    this.cancelWifiButton.disabled = true;
+    this.connectWifiButton.disabled = true;
+    this.connectWifiButton.textContent = "Connecting...";
+  }
+
+  finishWifiConnectionAttempt() {
+    this.pendingWifiSsid = "";
+    this.wifiConnectionInterrupted = false;
+    this.isConnectingWifi = false;
+    this.cancelWifiButton.disabled = false;
+    this.connectWifiButton.textContent = "Connect";
+    this.wifiSsid.value = "";
+    this.wifiPassword.value = "";
+    this.closeWifiDialog();
+  }
+
+  showWifiConnectionError(ssid, message) {
+    this.pendingWifiSsid = "";
+    this.wifiConnectionInterrupted = false;
+    this.isConnectingWifi = false;
+    this.wifiDialog.hidden = false;
+    this.wifiDialogTitle.textContent = `Connect to ${ssid}`;
+    this.wifiDialogMessage.classList.add("error");
+    this.wifiDialogMessage.textContent = message;
+    this.cancelWifiButton.disabled = false;
+    this.connectWifiButton.textContent = "Connect";
+    this.updateWifiConnectButton();
+    this.wifiPassword.focus();
+  }
+
+  clearWifiDialogMessage() {
+    this.showWifiDialogMessage("");
+  }
+
+  showWifiDialogMessage(message, isError = false) {
+    this.wifiDialogMessage.classList.toggle("error", isError);
+    this.wifiDialogMessage.textContent = message;
   }
 
   async claimSetupSession(deviceId) {

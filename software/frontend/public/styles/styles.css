@@ -448,6 +448,17 @@ body.appBooting .tabPanel {
   margin: 0 0 18px;
 }
 
+.wifiDialogMessage {
+  margin: -6px 0 16px;
+  color: #667085;
+  line-height: 1.5;
+}
+
+.wifiDialogMessage.error {
+  color: #d92d20;
+  font-weight: 700;
+}
+
 .wifiDialogCard label {
   display: block;
   margin: 16px 0;
