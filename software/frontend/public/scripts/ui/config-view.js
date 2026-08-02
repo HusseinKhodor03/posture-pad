@@ -5,7 +5,6 @@ export function updateConfigView({
   isSetupConnected,
   wifiSsid,
 }) {
-  const bleStatus = document.getElementById("bleStatus");
   const configTitle = document.getElementById("configTitle");
   const configDeviceMessage = document.getElementById("configDeviceMessage");
   const configWifiStatus = document.getElementById("configWifiStatus");
@@ -20,7 +19,6 @@ export function updateConfigView({
   const switchDeviceButton = document.getElementById("switchDeviceButton");
 
   if (isSetupConnected) {
-    bleStatus.textContent = "Setup";
     configTitle.textContent = deviceLabel;
     configDeviceMessage.textContent = isOnline
       ? "This Posture Pad is connected and ready to stream data."
@@ -43,7 +41,6 @@ export function updateConfigView({
     return;
   }
 
-  bleStatus.textContent = "Setup";
   configTitle.textContent = hasSelectedDevice
     ? deviceLabel
     : "Set up Posture Pad";

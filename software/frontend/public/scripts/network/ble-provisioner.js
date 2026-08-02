@@ -32,7 +32,6 @@ export class BleProvisioner {
 
   init() {
     this.connectBleButton = document.getElementById("connectBleButton");
-    this.bleStatus = document.getElementById("bleStatus");
     this.bleDeviceName = document.getElementById("bleDeviceName");
     this.bleMessage = document.getElementById("bleMessage");
     this.bleDeviceDetails = document.getElementById("bleDeviceDetails");
@@ -102,14 +101,12 @@ export class BleProvisioner {
 
   async connectDevice() {
     if (!navigator.bluetooth) {
-      this.bleStatus.textContent = "Bluetooth unavailable";
       this.bleMessage.textContent =
         "This browser does not support Web Bluetooth. Try Chrome or Edge.";
       return;
     }
 
     this.connectBleButton.disabled = true;
-    this.bleStatus.textContent = "Setup";
     this.bleMessage.textContent =
       "Choose your Posture Pad from the browser prompt.";
 
@@ -121,7 +118,6 @@ export class BleProvisioner {
       await this.releaseSetupSession();
       this.stopSetupSessionHeartbeat();
       this.setupSessionId = "";
-      this.bleStatus.textContent = "Setup";
       this.bleMessage.textContent = "Could not connect to the Posture Pad.";
       this.connectBleButton.disabled = false;
     }
@@ -129,7 +125,6 @@ export class BleProvisioner {
 
   async switchDevice() {
     if (!navigator.bluetooth) {
-      this.bleStatus.textContent = "Bluetooth unavailable";
       this.bleMessage.textContent =
         "This browser does not support Web Bluetooth. Try Chrome or Edge.";
       return;
@@ -230,7 +225,6 @@ export class BleProvisioner {
     this.connectWifiButton.disabled = false;
     this.otherNetworkButton.disabled = false;
     this.switchDeviceButton.disabled = false;
-    this.bleStatus.textContent = "Setup";
     this.bleMessage.textContent = "Your Posture Pad is ready for Wi-Fi setup.";
     this.updateWifiStatus(decoder.decode(statusValue));
     this.connectBleButton.textContent = "Connected";
@@ -549,7 +543,6 @@ export class BleProvisioner {
     this.commandCharacteristic = null;
     this.scanResultsCharacteristic = null;
     this.setupSessionCharacteristic = null;
-    this.bleStatus.textContent = "Setup";
     this.bleMessage.textContent =
       "Connect your Posture Pad to configure Wi-Fi.";
     this.closeWifiDialog();
@@ -595,7 +588,6 @@ export class BleProvisioner {
   }
 
   showBusyDeviceMessage(deviceId) {
-    this.bleStatus.textContent = "In use";
     this.bleDeviceName.textContent = `Posture Pad ${deviceId.slice(-6)}`;
     this.bleMessage.textContent =
       "This Posture Pad is already being configured in another browser.";
