@@ -39,6 +39,9 @@ function main() {
     onDeviceStatus: (deviceId, status) => {
       webSocketHub.broadcastDeviceStatus(deviceId, status);
     },
+    onDeviceAuthToken: (deviceId, authToken) => {
+      webSocketHub.setDeviceAuthToken(deviceId, authToken);
+    },
   });
   tcpSensorServer.listen();
 }

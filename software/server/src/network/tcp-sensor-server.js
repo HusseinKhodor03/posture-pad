@@ -7,11 +7,13 @@ export class TcpSensorServer {
     streamInactivityTimeoutMs,
     onSensorData,
     onDeviceStatus,
+    onDeviceAuthToken,
   }) {
     this.port = port;
     this.streamInactivityTimeoutMs = streamInactivityTimeoutMs;
     this.onSensorData = onSensorData;
     this.onDeviceStatus = onDeviceStatus;
+    this.onDeviceAuthToken = onDeviceAuthToken ?? (() => {});
     this.activeSocketsByDeviceId = new Map();
     this.inactivityTimersByDeviceId = new Map();
     this.server = net.createServer((socket) => {
@@ -59,11 +61,19 @@ export class TcpSensorServer {
     try {
       const sensorData = JSON.parse(line);
       const deviceId = normalizeDeviceId(sensorData?.device_id);
+      const authToken =
+        typeof sensorData?.auth_token === "string" ? sensorData.auth_token : "";
 
       if (deviceId) {
         this.registerSocketDevice(socket, deviceId);
         this.resetInactivityTimer(socket, deviceId);
-        this.onSensorData(deviceId, line);
+
+        if (authToken) {
+          this.onDeviceAuthToken(deviceId, authToken);
+        }
+
+        delete sensorData.auth_token;
+        this.onSensorData(deviceId, JSON.stringify(sensorData));
       }
     } catch (error) {
       console.error("Invalid sensor data:", error);

@@ -2,6 +2,7 @@ import {
   BLE_SERVICE_UUID,
   COMMAND_UUID,
   DEVICE_ID_UUID,
+  PAIRING_TOKEN_UUID,
   STATUS_UUID,
   WIFI_PASSWORD_UUID,
   WIFI_SCAN_RESULTS_UUID,
@@ -104,6 +105,8 @@ export class BleProvisioner {
       const service = await server.getPrimaryService(BLE_SERVICE_UUID);
       const deviceIdCharacteristic =
         await service.getCharacteristic(DEVICE_ID_UUID);
+      const pairingTokenCharacteristic =
+        await service.getCharacteristic(PAIRING_TOKEN_UUID);
       const statusCharacteristic =
         await service.getCharacteristic(STATUS_UUID);
       this.wifiSsidCharacteristic =
@@ -116,6 +119,7 @@ export class BleProvisioner {
         await service.getCharacteristic(WIFI_SCAN_RESULTS_UUID);
 
       const deviceIdValue = await deviceIdCharacteristic.readValue();
+      const pairingTokenValue = await pairingTokenCharacteristic.readValue();
       const statusValue = await statusCharacteristic.readValue();
       const decoder = new TextDecoder();
 
@@ -135,7 +139,8 @@ export class BleProvisioner {
       await this.scanResultsCharacteristic.startNotifications();
 
       const deviceId = decoder.decode(deviceIdValue);
-      this.onDeviceConnected(deviceId);
+      const pairingToken = decoder.decode(pairingTokenValue);
+      this.onDeviceConnected(deviceId, pairingToken);
 
       this.bleDeviceName.textContent = device.name;
       this.bleDeviceId.textContent = deviceId;

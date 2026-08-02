@@ -17,29 +17,17 @@ export function updateConfigView({
   const scanNetworksButton = document.getElementById("scanNetworksButton");
   const otherNetworkButton = document.getElementById("otherNetworkButton");
 
-  if (isOnline) {
-    bleStatus.textContent = "Wi-Fi";
-    configTitle.textContent = deviceLabel;
-    configDeviceMessage.textContent =
-      "This Posture Pad is connected and ready to stream data.";
-    configWifiStatus.textContent = wifiSsid
-      ? `Connected to Wi-Fi: ${wifiSsid}`
-      : "Connected to Wi-Fi";
-    setupSection.hidden = true;
-    wifiManagementSection.hidden = false;
-    networkListMessage.textContent =
-      "Network scanning is available during setup.";
-    scanNetworksButton.disabled = true;
-    otherNetworkButton.disabled = true;
-    return;
-  }
-
   if (isSetupConnected) {
     bleStatus.textContent = "Setup";
     configTitle.textContent = deviceLabel;
-    configDeviceMessage.textContent =
-      "Choose the Wi-Fi network this Posture Pad should use for streaming data.";
-    configWifiStatus.textContent = "Not connected to Wi-Fi";
+    configDeviceMessage.textContent = isOnline
+      ? "This Posture Pad is connected and ready to stream data."
+      : "Choose the Wi-Fi network this Posture Pad should use for streaming data.";
+    configWifiStatus.textContent = isOnline
+      ? wifiSsid
+        ? `Connected to Wi-Fi: ${wifiSsid}`
+        : "Connected to Wi-Fi"
+      : "Not connected to Wi-Fi";
     setupSection.hidden = true;
     wifiManagementSection.hidden = false;
     networkListMessage.textContent =
@@ -54,7 +42,7 @@ export function updateConfigView({
     ? deviceLabel
     : "Set up Posture Pad";
   configDeviceMessage.textContent = hasSelectedDevice
-    ? "Waiting for this Posture Pad to reconnect."
+    ? "Connect this Posture Pad over Bluetooth to view and configure it."
     : "Connect your Posture Pad to configure Wi-Fi.";
   setupSection.hidden = false;
   wifiManagementSection.hidden = true;

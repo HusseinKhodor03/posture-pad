@@ -102,7 +102,7 @@ function main() {
   dashboardWebSocket.connect();
 
   const bleProvisioner = new BleProvisioner({
-    onDeviceConnected: (deviceId) => {
+    onDeviceConnected: (deviceId, authToken) => {
       const isSameDevice = selectedDeviceId === deviceId;
       selectedDeviceId = deviceId;
       selectedDeviceLabel = formatDeviceLabel(selectedDeviceId);
@@ -110,6 +110,7 @@ function main() {
       selectedDeviceWifiSsid = isSameDevice ? selectedDeviceWifiSsid : "";
       isSetupConnected = true;
       selectDevice(selectedDeviceId);
+      dashboardWebSocket.setAuthToken(authToken);
       dashboardWebSocket.subscribeToDevice(selectedDeviceId);
       updateDashboardView({
         status: selectedDeviceStatus,
@@ -124,7 +125,17 @@ function main() {
       });
     },
     onDeviceDisconnected: () => {
+      selectedDeviceStatus = "offline";
+      selectedDeviceWifiSsid = "";
       isSetupConnected = false;
+      dashboardWebSocket.clearAuthToken();
+      dashboardWebSocket.unsubscribe();
+      leftHeatmap.resetSensorData();
+      rightHeatmap.resetSensorData();
+      updateDashboardView({
+        status: selectedDeviceStatus,
+        deviceLabel: selectedDeviceLabel,
+      });
       updateConfigView({
         deviceLabel: selectedDeviceLabel,
         hasSelectedDevice: Boolean(selectedDeviceId),

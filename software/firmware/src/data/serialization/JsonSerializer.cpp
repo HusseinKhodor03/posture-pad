@@ -1,11 +1,12 @@
 #include "JsonSerializer.h"
 
-String JsonSerializer::serialize(const String &deviceId, const String &wifiSsid, const FormattedFootData &leftFoot, const FormattedFootData &rightFoot,
+String JsonSerializer::serialize(const String &deviceId, const String &pairingToken, const String &wifiSsid, const FormattedFootData &leftFoot, const FormattedFootData &rightFoot,
                                  const FormattedPostureMetrics &metrics, const PostureAnalysis &analysis)
 {
     JsonDocument doc;
 
     doc["device_id"] = deviceId;
+    doc["auth_token"] = pairingToken;
     doc["wifi_ssid"] = wifiSsid;
 
     JsonObject left = doc["left_foot"].to<JsonObject>();

@@ -1,7 +1,9 @@
 #include "BleProvisioner.h"
 
 #include <ArduinoJson.h>
+#include <Preferences.h>
 #include <WiFi.h>
+#include <esp_system.h>
 
 namespace
 {
@@ -12,6 +14,9 @@ namespace
     const char *COMMAND_UUID = "1d831e2f-0ca5-4bf4-9f84-39487ad6b635";
     const char *STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
     const char *WIFI_SCAN_RESULTS_UUID = "7f9c0b60-9f79-46f6-8e2e-4f9c7d2c7c6d";
+    const char *PAIRING_TOKEN_UUID = "8be0ef6e-118a-4bd3-90b7-83bcaea35b7f";
+    const char *PREFERENCES_NAMESPACE = "posture-pad";
+    const char *PAIRING_TOKEN_KEY = "pairing_token";
     const int MAX_WIFI_SCAN_RESULTS = 15;
 }
 
@@ -23,6 +28,7 @@ void BleProvisioner::begin()
         return;
 
     deviceId = buildDeviceId();
+    pairingToken = loadPairingToken();
     String deviceName = "PosturePad-" + deviceId.substring(6);
 
     NimBLEDevice::init(deviceName.c_str());
@@ -30,6 +36,7 @@ void BleProvisioner::begin()
     NimBLEServer *server = NimBLEDevice::createServer();
     NimBLEService *service = server->createService(SERVICE_UUID);
     NimBLECharacteristic *deviceIdCharacteristic = service->createCharacteristic(DEVICE_ID_UUID, NIMBLE_PROPERTY::READ);
+    NimBLECharacteristic *pairingTokenCharacteristic = service->createCharacteristic(PAIRING_TOKEN_UUID, NIMBLE_PROPERTY::READ, 32);
     NimBLECharacteristic *wifiSsidCharacteristic = service->createCharacteristic(WIFI_SSID_UUID, NIMBLE_PROPERTY::WRITE, 32);
     NimBLECharacteristic *wifiPasswordCharacteristic = service->createCharacteristic(WIFI_PASSWORD_UUID, NIMBLE_PROPERTY::WRITE, 64);
     NimBLECharacteristic *commandCharacteristic = service->createCharacteristic(COMMAND_UUID, NIMBLE_PROPERTY::WRITE, 16);
@@ -41,6 +48,7 @@ void BleProvisioner::begin()
     commandCharacteristic->setCallbacks(this);
 
     deviceIdCharacteristic->setValue(deviceId.c_str());
+    pairingTokenCharacteristic->setValue(pairingToken.c_str());
     statusCharacteristic->setValue("unconfigured");
     scanResultsCharacteristic->setValue("{\"status\":\"idle\",\"networks\":[]}");
     currentStatus = "unconfigured";
@@ -244,6 +252,11 @@ const String &BleProvisioner::getDeviceId() const
     return deviceId;
 }
 
+const String &BleProvisioner::getPairingToken() const
+{
+    return pairingToken;
+}
+
 void BleProvisioner::publishScanResults(const String &scanResults)
 {
     if (scanResultsCharacteristic == nullptr)
@@ -258,4 +271,34 @@ String BleProvisioner::buildDeviceId() const
     char deviceId[13];
     snprintf(deviceId, sizeof(deviceId), "%012llX", static_cast<unsigned long long>(ESP.getEfuseMac()));
     return String(deviceId);
+}
+
+String BleProvisioner::loadPairingToken() const
+{
+    Preferences preferences;
+    preferences.begin(PREFERENCES_NAMESPACE, false);
+
+    String token = preferences.getString(PAIRING_TOKEN_KEY, "");
+
+    if (token.isEmpty())
+    {
+        token = createPairingToken();
+        preferences.putString(PAIRING_TOKEN_KEY, token);
+    }
+
+    preferences.end();
+    return token;
+}
+
+String BleProvisioner::createPairingToken() const
+{
+    char token[33];
+
+    for (int i = 0; i < 4; i++)
+    {
+        snprintf(token + (i * 8), 9, "%08lX", static_cast<unsigned long>(esp_random()));
+    }
+
+    token[32] = '\0';
+    return String(token);
 }

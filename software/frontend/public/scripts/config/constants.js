@@ -9,6 +9,7 @@ export const WIFI_PASSWORD_UUID = "ff386352-081f-4803-b256-c0fba4085d2d";
 export const COMMAND_UUID = "1d831e2f-0ca5-4bf4-9f84-39487ad6b635";
 export const STATUS_UUID = "079a5b9b-eb37-49ff-b11b-fa3c68efd8f8";
 export const WIFI_SCAN_RESULTS_UUID = "7f9c0b60-9f79-46f6-8e2e-4f9c7d2c7c6d";
+export const PAIRING_TOKEN_UUID = "8be0ef6e-118a-4bd3-90b7-83bcaea35b7f";
 
 export const LEFT_FOOT_SVG = "assets/left_foot.svg";
 export const RIGHT_FOOT_SVG = "assets/right_foot.svg";

@@ -7,6 +7,7 @@ export class DashboardWebSocket {
   constructor(onDashboardUpdate) {
     this.onDashboardUpdate = onDashboardUpdate;
     this.selectedDeviceId = null;
+    this.authToken = "";
     this.deviceStatus = "offline";
     this.ws = null;
   }
@@ -25,6 +26,15 @@ export class DashboardWebSocket {
 
     this.ws.addEventListener("message", (event) => {
       const message = JSON.parse(event.data);
+
+      if (message.type === "authorization_status") {
+        if (message.status !== "authorized") {
+          this.deviceStatus = "offline";
+          this.onDashboardUpdate({ status: "offline" });
+        }
+
+        return;
+      }
 
       if (message.type === "device_status") {
         this.deviceStatus = message.status;
@@ -50,7 +60,11 @@ export class DashboardWebSocket {
   subscribeToDevice(deviceId = this.selectedDeviceId) {
     this.selectedDeviceId = deviceId;
 
-    if (!this.selectedDeviceId || this.ws?.readyState !== WebSocket.OPEN) {
+    if (
+      !this.selectedDeviceId ||
+      !this.authToken ||
+      this.ws?.readyState !== WebSocket.OPEN
+    ) {
       return;
     }
 
@@ -58,6 +72,29 @@ export class DashboardWebSocket {
       JSON.stringify({
         type: "subscribe",
         device_id: this.selectedDeviceId,
+        auth_token: this.authToken,
+      }),
+    );
+  }
+
+  setAuthToken(authToken) {
+    this.authToken = authToken;
+  }
+
+  clearAuthToken() {
+    this.authToken = "";
+  }
+
+  unsubscribe() {
+    this.deviceStatus = "offline";
+
+    if (this.ws?.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    this.ws.send(
+      JSON.stringify({
+        type: "unsubscribe",
       }),
     );
   }

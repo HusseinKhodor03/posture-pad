@@ -14,6 +14,7 @@ public:
     void scanWifiNetworks();
     void setStatus(const String &status);
     const String &getDeviceId() const;
+    const String &getPairingToken() const;
 
 private:
     bool started;
@@ -25,8 +26,11 @@ private:
     NimBLECharacteristic *scanResultsCharacteristic;
     String currentStatus;
     String deviceId;
+    String pairingToken;
 
     String buildDeviceId() const;
+    String loadPairingToken() const;
+    String createPairingToken() const;
     void publishScanResults(const String &scanResults);
     void onWrite(NimBLECharacteristic *characteristic, NimBLEConnInfo &connectionInfo) override;
 };
