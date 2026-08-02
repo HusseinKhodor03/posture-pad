@@ -59,6 +59,14 @@ export class BleProvisioner {
       this.sendWifiCredentials();
     });
 
+    this.wifiSsid.addEventListener("input", () => {
+      this.updateWifiConnectButton();
+    });
+
+    this.wifiPassword.addEventListener("input", () => {
+      this.updateWifiConnectButton();
+    });
+
     this.cancelWifiButton.addEventListener("click", () => {
       this.closeWifiDialog();
     });
@@ -222,7 +230,6 @@ export class BleProvisioner {
     this.bleDeviceId.textContent = deviceId;
     this.bleDeviceDetails.hidden = false;
     this.closeWifiDialog();
-    this.connectWifiButton.disabled = false;
     this.otherNetworkButton.disabled = false;
     this.switchDeviceButton.disabled = false;
     this.bleMessage.textContent = "Your Posture Pad is ready for Wi-Fi setup.";
@@ -264,7 +271,7 @@ export class BleProvisioner {
 
     if (button) {
       button.disabled = true;
-      button.textContent = "Sending...";
+      button.textContent = "Connecting...";
     }
 
     try {
@@ -288,8 +295,8 @@ export class BleProvisioner {
       this.bleMessage.textContent = "Could not send the Wi-Fi credentials.";
     } finally {
       if (button) {
-        button.disabled = false;
-        button.textContent = "Connect to Wi-Fi";
+        button.textContent = "Connect";
+        this.updateWifiConnectButton();
       }
     }
   }
@@ -477,6 +484,7 @@ export class BleProvisioner {
     this.wifiSsid.value = network.ssid;
     this.wifiPassword.value = "";
     this.wifiDialog.hidden = false;
+    this.updateWifiConnectButton();
     this.wifiPassword.focus();
   }
 
@@ -487,6 +495,7 @@ export class BleProvisioner {
     this.wifiSsid.value = "";
     this.wifiPassword.value = "";
     this.wifiDialog.hidden = false;
+    this.updateWifiConnectButton();
     this.wifiSsid.focus();
   }
 
@@ -496,6 +505,21 @@ export class BleProvisioner {
     this.wifiSsidLabel.hidden = false;
     this.wifiSsid.value = "";
     this.wifiPassword.value = "";
+    this.updateWifiConnectButton();
+  }
+
+  updateWifiConnectButton() {
+    if (this.wifiDialog.hidden) {
+      this.connectWifiButton.disabled = true;
+      return;
+    }
+
+    const hasNetworkName = this.wifiSsid.value.trim().length > 0;
+    const hasPassword = this.wifiPassword.value.length > 0;
+
+    this.connectWifiButton.disabled = this.selectedNetwork
+      ? !hasPassword
+      : !hasNetworkName || !hasPassword;
   }
 
   getSignalLevel(rssi) {
