@@ -59,7 +59,6 @@ void BleProvisioner::begin()
     scanResultsCharacteristic->setValue("{\"status\":\"idle\",\"networks\":[]}");
     setupSessionCharacteristic->setValue("available");
     currentStatus = "unconfigured";
-    service->start();
 
     NimBLEAdvertising *advertising = NimBLEDevice::getAdvertising();
     advertising->setName(deviceName.c_str());
