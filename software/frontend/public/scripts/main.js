@@ -7,6 +7,7 @@ import {
   TAB_HASHES,
 } from "./config/constants.js";
 import {
+  clearSelectedDevice,
   formatDeviceLabel,
   loadSelectedDeviceId,
   selectDevice,
@@ -21,7 +22,11 @@ import { BleProvisioner } from "./network/ble-provisioner.js";
 import { DashboardWebSocket } from "./network/dashboard-web-socket.js";
 
 function main() {
-  let selectedDeviceId = loadSelectedDeviceId();
+  if (loadSelectedDeviceId()) {
+    clearSelectedDevice();
+  }
+
+  let selectedDeviceId = null;
   let selectedDeviceLabel = formatDeviceLabel(selectedDeviceId);
   let selectedDeviceStatus = "offline";
   let selectedDeviceWifiSsid = "";
@@ -138,9 +143,12 @@ function main() {
       bleProvisioner?.setConnectedWifiSsid(selectedDeviceWifiSsid);
     },
     onDeviceDisconnected: () => {
+      selectedDeviceId = null;
+      selectedDeviceLabel = formatDeviceLabel(selectedDeviceId);
       selectedDeviceStatus = "offline";
       selectedDeviceWifiSsid = "";
       isSetupConnected = false;
+      clearSelectedDevice();
       dashboardWebSocket.clearAuthToken();
       dashboardWebSocket.unsubscribe();
       leftHeatmap.resetSensorData();
