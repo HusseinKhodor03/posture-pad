@@ -18,19 +18,20 @@ export function updateConfigView({
   const otherNetworkButton = document.getElementById("otherNetworkButton");
   const forgetWifiButton = document.getElementById("forgetWifiButton");
   const switchDeviceButton = document.getElementById("switchDeviceButton");
+  const hasKnownWifiNetwork = Boolean(wifiSsid);
 
   if (isSetupConnected) {
     configTitle.textContent = deviceLabel;
-    configDeviceMessage.textContent = isOnline
+    configDeviceMessage.textContent = hasKnownWifiNetwork
       ? "This Posture Pad is connected and ready to stream data."
       : "Choose the Wi-Fi network this Posture Pad should use for streaming data.";
-    configWifiStatus.textContent = isOnline
-      ? wifiSsid || "Connected"
+    configWifiStatus.textContent = hasKnownWifiNetwork
+      ? wifiSsid
       : "Not Connected";
     setupSection.hidden = true;
     wifiManagementSection.hidden = false;
-    forgetWifiButton.hidden = !isOnline;
-    forgetWifiButton.disabled = !isOnline;
+    forgetWifiButton.hidden = !hasKnownWifiNetwork;
+    forgetWifiButton.disabled = !hasKnownWifiNetwork;
     switchDeviceButton.hidden = false;
     switchDeviceButton.disabled = false;
     scanNetworksButton.disabled = isScanningWifi;

@@ -85,7 +85,6 @@ function main() {
       leftHeatmap.updateSensorData(dashboardState.data.left_foot.sensors);
       rightHeatmap.updateSensorData(dashboardState.data.right_foot.sensors);
     } else if (dashboardState.status === "offline") {
-      selectedDeviceWifiSsid = "";
       leftHeatmap.resetSensorData();
       rightHeatmap.resetSensorData();
     }
