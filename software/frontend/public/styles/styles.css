@@ -207,7 +207,14 @@ body.appBooting .tabPanel {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  margin: 14px 0 8px;
+  margin: 14px 0 6px;
+}
+
+.configDeviceId {
+  margin: 0 0 18px;
+  color: #667085;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .configCard > p,

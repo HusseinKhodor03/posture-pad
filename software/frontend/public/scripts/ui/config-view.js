@@ -1,5 +1,6 @@
 export function updateConfigView({
   deviceLabel,
+  deviceId,
   hasSelectedDevice,
   isOnline,
   isScanningWifi = false,
@@ -7,6 +8,7 @@ export function updateConfigView({
   wifiSsid,
 }) {
   const configTitle = document.getElementById("configTitle");
+  const configDeviceId = document.getElementById("configDeviceId");
   const configDeviceMessage = document.getElementById("configDeviceMessage");
   const configWifiStatus = document.getElementById("configWifiStatus");
   const setupSection = document.getElementById("setupSection");
@@ -22,9 +24,9 @@ export function updateConfigView({
 
   if (isSetupConnected) {
     configTitle.textContent = deviceLabel;
-    configDeviceMessage.textContent = hasKnownWifiNetwork
-      ? "This Posture Pad is connected and ready to stream data."
-      : "Choose the Wi-Fi network this Posture Pad should use for streaming data.";
+    configDeviceId.textContent = `Device ID: ${deviceId}`;
+    configDeviceId.hidden = false;
+    configDeviceMessage.hidden = true;
     configWifiStatus.textContent = hasKnownWifiNetwork
       ? wifiSsid
       : "Not Connected";
@@ -45,9 +47,14 @@ export function updateConfigView({
   configTitle.textContent = hasSelectedDevice
     ? deviceLabel
     : "Set up Posture Pad";
+  configDeviceId.textContent = hasSelectedDevice
+    ? `Device ID: ${deviceId}`
+    : "";
+  configDeviceId.hidden = !hasSelectedDevice;
   configDeviceMessage.textContent = hasSelectedDevice
     ? "Connect this Posture Pad over Bluetooth to view and configure it."
     : "Connect your Posture Pad to configure Wi-Fi.";
+  configDeviceMessage.hidden = false;
   setupSection.hidden = false;
   wifiManagementSection.hidden = true;
   forgetWifiButton.hidden = true;

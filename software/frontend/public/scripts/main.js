@@ -69,6 +69,7 @@ function main() {
   });
   updateConfigView({
     deviceLabel: selectedDeviceLabel,
+    deviceId: selectedDeviceId,
     hasSelectedDevice: Boolean(selectedDeviceId),
     isOnline: selectedDeviceStatus === "online",
     isScanningWifi,
@@ -97,6 +98,7 @@ function main() {
     });
     updateConfigView({
       deviceLabel: selectedDeviceLabel,
+      deviceId: selectedDeviceId,
       hasSelectedDevice: Boolean(selectedDeviceId),
       isOnline: selectedDeviceStatus === "online",
       isScanningWifi,
@@ -126,6 +128,7 @@ function main() {
       });
       updateConfigView({
         deviceLabel: selectedDeviceLabel,
+        deviceId: selectedDeviceId,
         hasSelectedDevice: Boolean(selectedDeviceId),
         isOnline: selectedDeviceStatus === "online",
         isScanningWifi,
@@ -149,6 +152,7 @@ function main() {
       });
       updateConfigView({
         deviceLabel: selectedDeviceLabel,
+        deviceId: selectedDeviceId,
         hasSelectedDevice: Boolean(selectedDeviceId),
         isOnline: selectedDeviceStatus === "online",
         isScanningWifi,
@@ -169,6 +173,7 @@ function main() {
       });
       updateConfigView({
         deviceLabel: selectedDeviceLabel,
+        deviceId: selectedDeviceId,
         hasSelectedDevice: Boolean(selectedDeviceId),
         isOnline: false,
         isScanningWifi,
@@ -186,6 +191,7 @@ function main() {
       });
       updateConfigView({
         deviceLabel: selectedDeviceLabel,
+        deviceId: selectedDeviceId,
         hasSelectedDevice: Boolean(selectedDeviceId),
         isOnline: selectedDeviceStatus === "online",
         isScanningWifi,
