@@ -53,7 +53,7 @@ private:
     String rollbackPassword;
 
     void updateLed();
-    void handleWifiConnectionTimeout();
+    void handleNetworkConnectionTimeout();
 };
 
 #endif

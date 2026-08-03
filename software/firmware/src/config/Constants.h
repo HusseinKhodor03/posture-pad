@@ -38,7 +38,7 @@ const float SUPINATION_THRESHOLD = 0.7f;
 
 // Network constants
 const unsigned long WIFI_RETRY_MS = 3000;
-const unsigned long WIFI_CONNECT_TIMEOUT_MS = 15000;
+const unsigned long NETWORK_CONNECT_TIMEOUT_MS = 20000;
 const unsigned long TCP_RETRY_MS = 3000;
 
 // Foot position maps

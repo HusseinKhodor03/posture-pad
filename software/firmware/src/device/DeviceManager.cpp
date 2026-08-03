@@ -55,9 +55,9 @@ void DeviceManager::update()
     }
 
     networkManager.update();
-    handleWifiConnectionTimeout();
+    handleNetworkConnectionTimeout();
 
-    if (wifiConnectionPending && networkManager.isWifiConnected())
+    if (wifiConnectionPending && networkManager.isConnected())
     {
         if (saveCredentialsOnConnect)
         {
@@ -70,7 +70,7 @@ void DeviceManager::update()
         rollbackCredentialsAvailable = false;
         rollbackSsid = "";
         rollbackPassword = "";
-        Serial.println("Connected to Wi-Fi!");
+        Serial.println("Connected to Wi-Fi and TCP server!");
     }
 
     updateLed();
@@ -98,12 +98,12 @@ void DeviceManager::update()
     tcpClient.send(json);
 }
 
-void DeviceManager::handleWifiConnectionTimeout()
+void DeviceManager::handleNetworkConnectionTimeout()
 {
     if (!wifiConnectionPending || !saveCredentialsOnConnect)
         return;
 
-    if (millis() - wifiConnectionStartedAt < WIFI_CONNECT_TIMEOUT_MS)
+    if (millis() - wifiConnectionStartedAt < NETWORK_CONNECT_TIMEOUT_MS)
         return;
 
     saveCredentialsOnConnect = false;
