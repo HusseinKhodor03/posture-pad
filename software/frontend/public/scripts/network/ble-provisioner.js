@@ -742,12 +742,14 @@ export class BleProvisioner {
     this.pendingWifiSsid = "";
     this.wifiConnectionInterrupted = false;
     this.isConnectingWifi = false;
+    this.bleDeviceName.textContent = "Connect Posture Pad";
     this.bleMessage.textContent =
-      "Connect your Posture Pad to configure Wi-Fi.";
+      "Make sure your device is powered on and nearby.";
+    this.bleDeviceDetails.hidden = true;
     this.closeWifiDialog();
     this.connectWifiButton.disabled = true;
     this.connectBleButton.disabled = false;
-    this.connectBleButton.textContent = "Reconnect Posture Pad";
+    this.connectBleButton.textContent = "Connect Posture Pad";
     this.scanNetworksButton.disabled = true;
     this.otherNetworkButton.disabled = true;
     this.switchDeviceButton.hidden = true;
