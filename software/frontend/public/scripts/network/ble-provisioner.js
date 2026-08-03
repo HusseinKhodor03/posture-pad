@@ -63,6 +63,8 @@ export class BleProvisioner {
     this.wifiSsid = document.getElementById("wifiSsid");
     this.wifiPasswordLabel = document.getElementById("wifiPasswordLabel");
     this.wifiPassword = document.getElementById("wifiPassword");
+    this.wifiSecurityLabel = document.getElementById("wifiSecurityLabel");
+    this.wifiSecurity = document.getElementById("wifiSecurity");
     this.connectWifiButton = document.getElementById("connectWifiButton");
     this.cancelWifiButton = document.getElementById("cancelWifiButton");
     this.scanNetworksButton = document.getElementById("scanNetworksButton");
@@ -86,6 +88,11 @@ export class BleProvisioner {
     });
 
     this.wifiPassword.addEventListener("input", () => {
+      this.updateWifiConnectButton();
+    });
+
+    this.wifiSecurity.addEventListener("change", () => {
+      this.updateManualNetworkSecurity();
       this.updateWifiConnectButton();
     });
 
@@ -273,7 +280,7 @@ export class BleProvisioner {
 
   async sendWifiCredentials(
     ssid = this.selectedNetwork?.ssid ?? this.wifiSsid.value.trim(),
-    password = this.wifiPassword.value,
+    password = this.isWifiPasswordRequired() ? this.wifiPassword.value : "",
     button = this.connectWifiButton,
   ) {
     if (this.isConnectingWifi) {
@@ -618,9 +625,11 @@ export class BleProvisioner {
       network.secure ? "" : "This is an open network. No password is required.",
     );
     this.wifiSsidLabel.hidden = true;
+    this.wifiSecurityLabel.hidden = true;
     this.wifiPasswordLabel.hidden = !network.secure;
     this.wifiSsid.value = network.ssid;
     this.wifiPassword.value = "";
+    this.wifiSecurity.value = network.secure ? "secure" : "none";
     this.wifiDialog.hidden = false;
     this.isConnectingWifi = false;
     this.setWifiDialogInputsDisabled(false);
@@ -638,9 +647,11 @@ export class BleProvisioner {
     this.wifiDialogTitle.textContent = "Other Network";
     this.clearWifiDialogMessage();
     this.wifiSsidLabel.hidden = false;
-    this.wifiPasswordLabel.hidden = false;
+    this.wifiSecurityLabel.hidden = false;
+    this.wifiSecurity.value = "secure";
     this.wifiSsid.value = "";
     this.wifiPassword.value = "";
+    this.updateManualNetworkSecurity();
     this.wifiDialog.hidden = false;
     this.isConnectingWifi = false;
     this.setWifiDialogInputsDisabled(false);
@@ -656,7 +667,9 @@ export class BleProvisioner {
     this.selectedNetwork = null;
     this.wifiDialog.hidden = true;
     this.wifiSsidLabel.hidden = false;
+    this.wifiSecurityLabel.hidden = true;
     this.wifiPasswordLabel.hidden = false;
+    this.wifiSecurity.value = "secure";
     this.wifiSsid.value = "";
     this.wifiPassword.value = "";
     this.setWifiDialogInputsDisabled(false);
@@ -675,7 +688,26 @@ export class BleProvisioner {
 
     this.connectWifiButton.disabled = this.selectedNetwork
       ? this.selectedNetwork.secure && !hasPassword
-      : !hasNetworkName || !hasPassword;
+      : !hasNetworkName || (this.isWifiPasswordRequired() && !hasPassword);
+  }
+
+  updateManualNetworkSecurity() {
+    if (this.selectedNetwork) {
+      return;
+    }
+
+    const passwordRequired = this.isWifiPasswordRequired();
+    this.wifiPasswordLabel.hidden = !passwordRequired;
+
+    if (!passwordRequired) {
+      this.wifiPassword.value = "";
+    }
+  }
+
+  isWifiPasswordRequired() {
+    return this.selectedNetwork
+      ? this.selectedNetwork.secure
+      : this.wifiSecurity.value !== "none";
   }
 
   getSignalLevel(rssi) {
@@ -844,6 +876,7 @@ export class BleProvisioner {
   setWifiDialogInputsDisabled(disabled) {
     this.wifiSsid.disabled = disabled;
     this.wifiPassword.disabled = disabled;
+    this.wifiSecurity.disabled = disabled;
   }
 
   finishForgetWifiNetwork() {

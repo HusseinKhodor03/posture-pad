@@ -600,7 +600,8 @@ body.appBooting .tabPanel {
   display: none;
 }
 
-.wifiDialogCard input {
+.wifiDialogCard input,
+.wifiDialogCard select {
   display: block;
   width: 100%;
   box-sizing: border-box;
@@ -611,7 +612,8 @@ body.appBooting .tabPanel {
   font: inherit;
 }
 
-.wifiDialogCard input:disabled {
+.wifiDialogCard input:disabled,
+.wifiDialogCard select:disabled {
   color: #6b7280;
   background: #f1f5f9;
   cursor: not-allowed;
@@ -619,7 +621,13 @@ body.appBooting .tabPanel {
 
 .wifiDialogActions {
   display: flex;
+  align-items: flex-end;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 8px;
+}
+
+.wifiDialogCard .wifiSecurityLabel {
+  min-width: 160px;
+  margin: 0 auto 0 0;
 }
