@@ -290,6 +290,15 @@ body.appBooting .tabPanel {
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.connectButton:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.connectButton:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .connectButton:disabled {
