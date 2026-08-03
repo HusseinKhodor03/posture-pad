@@ -65,6 +65,7 @@ function main() {
   updateDashboardView({
     status: selectedDeviceStatus,
     deviceLabel: selectedDeviceLabel,
+    isPaused: isScanningWifi,
   });
   updateConfigView({
     deviceLabel: selectedDeviceLabel,
@@ -84,7 +85,7 @@ function main() {
       selectedDeviceWifiSsid = dashboardState.data.wifi_ssid || "";
       leftHeatmap.updateSensorData(dashboardState.data.left_foot.sensors);
       rightHeatmap.updateSensorData(dashboardState.data.right_foot.sensors);
-    } else if (dashboardState.status === "offline") {
+    } else if (dashboardState.status === "offline" && !isScanningWifi) {
       leftHeatmap.resetSensorData();
       rightHeatmap.resetSensorData();
     }
@@ -92,6 +93,7 @@ function main() {
     updateDashboardView({
       ...dashboardState,
       deviceLabel: selectedDeviceLabel,
+      isPaused: isScanningWifi,
     });
     updateConfigView({
       deviceLabel: selectedDeviceLabel,
@@ -120,6 +122,7 @@ function main() {
       updateDashboardView({
         status: selectedDeviceStatus,
         deviceLabel: selectedDeviceLabel,
+        isPaused: isScanningWifi,
       });
       updateConfigView({
         deviceLabel: selectedDeviceLabel,
@@ -142,6 +145,7 @@ function main() {
       updateDashboardView({
         status: selectedDeviceStatus,
         deviceLabel: selectedDeviceLabel,
+        isPaused: isScanningWifi,
       });
       updateConfigView({
         deviceLabel: selectedDeviceLabel,
@@ -161,6 +165,7 @@ function main() {
       updateDashboardView({
         status: selectedDeviceStatus,
         deviceLabel: selectedDeviceLabel,
+        isPaused: isScanningWifi,
       });
       updateConfigView({
         deviceLabel: selectedDeviceLabel,
@@ -174,6 +179,11 @@ function main() {
     },
     onWifiScanStateChanged: (scanState) => {
       isScanningWifi = scanState;
+      updateDashboardView({
+        status: selectedDeviceStatus,
+        deviceLabel: selectedDeviceLabel,
+        isPaused: isScanningWifi,
+      });
       updateConfigView({
         deviceLabel: selectedDeviceLabel,
         hasSelectedDevice: Boolean(selectedDeviceId),

@@ -142,6 +142,10 @@ body.appBooting .tabPanel {
   background: #22c55e;
 }
 
+.statusDot.paused {
+  background: #f59e0b;
+}
+
 .statusDot.offline {
   background: #ef4444;
 }

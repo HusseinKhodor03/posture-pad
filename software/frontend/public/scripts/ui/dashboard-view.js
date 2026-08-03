@@ -1,13 +1,28 @@
-export function updateDashboardView({ status, deviceLabel, data }) {
+export function updateDashboardView({
+  status,
+  deviceLabel,
+  isPaused = false,
+  data,
+}) {
   const isOnline = status === "online";
+  const displayStatus = isPaused ? "paused" : status;
   const selectedDeviceLabel = document.getElementById("selectedDeviceLabel");
   const statusDot = document.getElementById("dashboardStatusDot");
   const statusText = document.getElementById("dashboardStatusText");
 
   selectedDeviceLabel.innerText = deviceLabel;
-  statusDot.classList.toggle("online", isOnline);
-  statusDot.classList.toggle("offline", !isOnline);
-  statusText.innerText = isOnline ? "Online" : "Offline";
+  statusDot.classList.toggle("online", displayStatus === "online");
+  statusDot.classList.toggle("paused", displayStatus === "paused");
+  statusDot.classList.toggle("offline", displayStatus === "offline");
+  statusText.innerText = isPaused
+    ? "Paused"
+    : isOnline
+      ? "Online"
+      : "Offline";
+
+  if (isPaused && !data) {
+    return;
+  }
 
   if (!isOnline || !data) {
     document.getElementById("postureState").innerText =
