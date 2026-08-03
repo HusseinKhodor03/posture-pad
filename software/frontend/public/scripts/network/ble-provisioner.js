@@ -6,6 +6,7 @@ import {
   SETUP_SESSION_UUID,
   STATUS_UUID,
   WIFI_PASSWORD_UUID,
+  WIFI_CONNECTION_TIMEOUT_MS,
   WIFI_SCAN_RESULTS_UUID,
   WIFI_SCAN_TIMEOUT_MS,
   WIFI_SSID_UUID,
@@ -31,6 +32,7 @@ export class BleProvisioner {
     this.setupSessionId = "";
     this.setupSessionHeartbeat = null;
     this.wifiScanTimeout = null;
+    this.wifiConnectionTimeout = null;
     this.selectedNetwork = null;
     this.scannedNetworks = [];
     this.pendingScanNetworks = [];
@@ -56,6 +58,7 @@ export class BleProvisioner {
     this.wifiDialogMessage = document.getElementById("wifiDialogMessage");
     this.wifiSsidLabel = document.getElementById("wifiSsidLabel");
     this.wifiSsid = document.getElementById("wifiSsid");
+    this.wifiPasswordLabel = document.getElementById("wifiPasswordLabel");
     this.wifiPassword = document.getElementById("wifiPassword");
     this.connectWifiButton = document.getElementById("connectWifiButton");
     this.cancelWifiButton = document.getElementById("cancelWifiButton");
@@ -113,7 +116,7 @@ export class BleProvisioner {
       const networkIndex = Number(networkButton.dataset.networkIndex);
       const network = this.scannedNetworks[networkIndex];
 
-      if (network) {
+      if (network && !this.isConnectingWifi) {
         this.selectNetwork(network);
       }
     });
@@ -270,6 +273,10 @@ export class BleProvisioner {
     password = this.wifiPassword.value,
     button = this.connectWifiButton,
   ) {
+    if (this.isConnectingWifi) {
+      return;
+    }
+
     const encoder = new TextEncoder();
     const ssidValue = encoder.encode(ssid);
     const passwordValue = encoder.encode(password);
@@ -288,7 +295,7 @@ export class BleProvisioner {
     if (this.isConnectedSsid(ssid)) {
       this.showWifiDialogMessage(`"${ssid}" is already connected.`, true);
       this.updateWifiConnectButton();
-      this.wifiPassword.focus();
+      this.focusWifiDialogInput();
       return;
     }
 
@@ -400,7 +407,7 @@ export class BleProvisioner {
       this.wifiConnectionInterrupted = true;
       this.showWifiConnectionError(
         this.pendingWifiSsid,
-        `Could not connect to "${this.pendingWifiSsid}". Check the password and try again.`,
+        this.getWifiConnectionErrorMessage(this.pendingWifiSsid),
       );
     }
   }
@@ -594,26 +601,25 @@ export class BleProvisioner {
     }
 
     this.selectedNetwork = network;
-
-    if (!network.secure) {
-      this.selectedNetwork = null;
-      this.sendWifiCredentials(network.ssid, "", null);
-      return;
-    }
-
     this.openSelectedNetworkDialog(network);
   }
 
   openSelectedNetworkDialog(network) {
     this.wifiDialogTitle.textContent = `Connect to ${network.ssid}`;
-    this.clearWifiDialogMessage();
+    this.showWifiDialogMessage(
+      network.secure ? "" : "This is an open network. No password is required.",
+    );
     this.wifiSsidLabel.hidden = true;
+    this.wifiPasswordLabel.hidden = !network.secure;
     this.wifiSsid.value = network.ssid;
     this.wifiPassword.value = "";
     this.wifiDialog.hidden = false;
     this.isConnectingWifi = false;
     this.updateWifiConnectButton();
-    this.wifiPassword.focus();
+
+    if (network.secure) {
+      this.wifiPassword.focus();
+    }
   }
 
   openManualNetworkDialog() {
@@ -621,6 +627,7 @@ export class BleProvisioner {
     this.wifiDialogTitle.textContent = "Other Network";
     this.clearWifiDialogMessage();
     this.wifiSsidLabel.hidden = false;
+    this.wifiPasswordLabel.hidden = false;
     this.wifiSsid.value = "";
     this.wifiPassword.value = "";
     this.wifiDialog.hidden = false;
@@ -637,6 +644,7 @@ export class BleProvisioner {
     this.selectedNetwork = null;
     this.wifiDialog.hidden = true;
     this.wifiSsidLabel.hidden = false;
+    this.wifiPasswordLabel.hidden = false;
     this.wifiSsid.value = "";
     this.wifiPassword.value = "";
     this.clearWifiDialogMessage();
@@ -653,7 +661,7 @@ export class BleProvisioner {
     const hasPassword = this.wifiPassword.value.length > 0;
 
     this.connectWifiButton.disabled = this.selectedNetwork
-      ? !hasPassword
+      ? this.selectedNetwork.secure && !hasPassword
       : !hasNetworkName || !hasPassword;
   }
 
@@ -706,7 +714,7 @@ export class BleProvisioner {
       ) {
         this.showWifiConnectionError(
           this.pendingWifiSsid,
-          `Could not connect to "${this.pendingWifiSsid}". Check the password and try again.`,
+          this.getWifiConnectionErrorMessage(this.pendingWifiSsid),
         );
       }
     }
@@ -731,6 +739,7 @@ export class BleProvisioner {
     }
 
     this.setWifiScanState(false);
+    this.stopWifiConnectionTimeout();
     this.stopSetupSessionHeartbeat();
     this.setupSessionId = "";
     this.bleDevice = null;
@@ -770,6 +779,7 @@ export class BleProvisioner {
     this.pendingWifiSsid = ssid;
     this.wifiConnectionInterrupted = false;
     this.isConnectingWifi = true;
+    this.startWifiConnectionTimeout(ssid);
     this.wifiDialogMessage.classList.remove("error");
     this.wifiDialogMessage.textContent = `Connecting to "${ssid}"...`;
     this.cancelWifiButton.disabled = true;
@@ -781,6 +791,7 @@ export class BleProvisioner {
     this.pendingWifiSsid = "";
     this.wifiConnectionInterrupted = false;
     this.isConnectingWifi = false;
+    this.stopWifiConnectionTimeout();
     this.cancelWifiButton.disabled = false;
     this.connectWifiButton.textContent = "Connect";
     this.wifiSsid.value = "";
@@ -792,6 +803,7 @@ export class BleProvisioner {
     this.pendingWifiSsid = "";
     this.wifiConnectionInterrupted = false;
     this.isConnectingWifi = false;
+    this.stopWifiConnectionTimeout();
     this.wifiDialog.hidden = false;
     this.wifiDialogTitle.textContent = `Connect to ${ssid}`;
     this.wifiDialogMessage.classList.add("error");
@@ -799,7 +811,7 @@ export class BleProvisioner {
     this.cancelWifiButton.disabled = false;
     this.connectWifiButton.textContent = "Connect";
     this.updateWifiConnectButton();
-    this.wifiPassword.focus();
+    this.focusWifiDialogInput();
   }
 
   clearWifiDialogMessage() {
@@ -809,6 +821,52 @@ export class BleProvisioner {
   showWifiDialogMessage(message, isError = false) {
     this.wifiDialogMessage.classList.toggle("error", isError);
     this.wifiDialogMessage.textContent = message;
+  }
+
+  getWifiConnectionErrorMessage(ssid) {
+    if (this.selectedNetwork && !this.selectedNetwork.secure) {
+      return `Could not connect to "${ssid}". Try another network.`;
+    }
+
+    return `Could not connect to "${ssid}". Check the password and try again.`;
+  }
+
+  startWifiConnectionTimeout(ssid) {
+    this.stopWifiConnectionTimeout();
+
+    this.wifiConnectionTimeout = window.setTimeout(() => {
+      if (!this.isConnectingWifi || this.pendingWifiSsid !== ssid) {
+        return;
+      }
+
+      this.showWifiConnectionError(
+        ssid,
+        this.getWifiConnectionErrorMessage(ssid),
+      );
+    }, WIFI_CONNECTION_TIMEOUT_MS);
+  }
+
+  stopWifiConnectionTimeout() {
+    if (!this.wifiConnectionTimeout) {
+      return;
+    }
+
+    window.clearTimeout(this.wifiConnectionTimeout);
+    this.wifiConnectionTimeout = null;
+  }
+
+  focusWifiDialogInput() {
+    if (this.wifiPasswordLabel.hidden) {
+      this.connectWifiButton.focus();
+      return;
+    }
+
+    if (this.wifiSsidLabel.hidden) {
+      this.wifiPassword.focus();
+      return;
+    }
+
+    this.wifiSsid.focus();
   }
 
   async claimSetupSession(deviceId) {
