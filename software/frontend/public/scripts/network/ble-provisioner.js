@@ -854,7 +854,9 @@ export class BleProvisioner {
     this.isConnectingWifi = false;
     this.stopWifiConnectionTimeout();
     this.wifiDialog.hidden = false;
-    this.wifiDialogTitle.textContent = `Connect to ${ssid}`;
+    this.wifiDialogTitle.textContent = this.selectedNetwork
+      ? `Connect to ${ssid}`
+      : "Other Network";
     this.wifiDialogMessage.classList.add("error");
     this.wifiDialogMessage.textContent = message;
     this.cancelWifiButton.disabled = false;
@@ -915,11 +917,7 @@ export class BleProvisioner {
   }
 
   getWifiConnectionErrorMessage(ssid) {
-    if (this.selectedNetwork && !this.selectedNetwork.secure) {
-      return `Could not connect to "${ssid}". Try another network.`;
-    }
-
-    return `Could not connect to "${ssid}". Check the password and try again.`;
+    return `Could not connect to "${ssid}".`;
   }
 
   startWifiConnectionTimeout(ssid) {
