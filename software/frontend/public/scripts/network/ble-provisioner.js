@@ -7,6 +7,7 @@ import {
   STATUS_UUID,
   WIFI_PASSWORD_UUID,
   WIFI_CONNECTION_TIMEOUT_MS,
+  WIFI_FORGET_TIMEOUT_MS,
   WIFI_SCAN_RESULTS_UUID,
   WIFI_SCAN_TIMEOUT_MS,
   WIFI_SSID_UUID,
@@ -33,6 +34,7 @@ export class BleProvisioner {
     this.setupSessionHeartbeat = null;
     this.wifiScanTimeout = null;
     this.wifiConnectionTimeout = null;
+    this.wifiForgetTimeout = null;
     this.selectedNetwork = null;
     this.scannedNetworks = [];
     this.pendingScanNetworks = [];
@@ -44,6 +46,7 @@ export class BleProvisioner {
     this.isSwitchingDevice = false;
     this.isScanningWifi = false;
     this.isConnectingWifi = false;
+    this.isForgettingWifi = false;
   }
 
   init() {
@@ -371,10 +374,16 @@ export class BleProvisioner {
   }
 
   async forgetWifiNetwork() {
-    if (!this.commandCharacteristic || !this.setupSessionId) {
+    if (
+      !this.commandCharacteristic ||
+      !this.setupSessionId ||
+      this.isForgettingWifi
+    ) {
       return;
     }
 
+    this.isForgettingWifi = true;
+    this.startWifiForgetTimeout();
     this.forgetWifiButton.disabled = true;
     this.forgetWifiButton.textContent = "Forgetting...";
     this.closeWifiDialog();
@@ -383,14 +392,11 @@ export class BleProvisioner {
       await this.commandCharacteristic.writeValueWithResponse(
         new TextEncoder().encode(`forget:${this.setupSessionId}`),
       );
-      this.updateWifiStatus("unconfigured");
-      this.bleMessage.textContent =
-        "The saved Wi-Fi network was removed from this Posture Pad.";
-      this.onWifiForgotten?.();
     } catch (error) {
       console.error("Could not forget Wi-Fi network:", error);
+      this.stopWifiForgetTimeout();
       this.bleMessage.textContent = "Could not forget the Wi-Fi network.";
-    } finally {
+      this.isForgettingWifi = false;
       this.forgetWifiButton.disabled = false;
       this.forgetWifiButton.textContent = "Forget This Network...";
     }
@@ -403,6 +409,8 @@ export class BleProvisioner {
       this.bleMessage.textContent = "The Posture Pad is connecting to Wi-Fi...";
     } else if (status === "connected") {
       this.bleMessage.textContent = "The Posture Pad is connected to Wi-Fi.";
+    } else if (status === "unconfigured" && this.isForgettingWifi) {
+      this.finishForgetWifiNetwork();
     } else if (status === "unconfigured" && this.pendingWifiSsid) {
       this.wifiConnectionInterrupted = true;
       this.showWifiConnectionError(
@@ -740,6 +748,7 @@ export class BleProvisioner {
 
     this.setWifiScanState(false);
     this.stopWifiConnectionTimeout();
+    this.stopWifiForgetTimeout();
     this.stopSetupSessionHeartbeat();
     this.setupSessionId = "";
     this.bleDevice = null;
@@ -751,6 +760,7 @@ export class BleProvisioner {
     this.pendingWifiSsid = "";
     this.wifiConnectionInterrupted = false;
     this.isConnectingWifi = false;
+    this.isForgettingWifi = false;
     this.bleDeviceName.textContent = "Connect Posture Pad";
     this.bleMessage.textContent =
       "Make sure your device is powered on and nearby.";
@@ -821,6 +831,41 @@ export class BleProvisioner {
   showWifiDialogMessage(message, isError = false) {
     this.wifiDialogMessage.classList.toggle("error", isError);
     this.wifiDialogMessage.textContent = message;
+  }
+
+  finishForgetWifiNetwork() {
+    this.isForgettingWifi = false;
+    this.stopWifiForgetTimeout();
+    this.forgetWifiButton.disabled = false;
+    this.forgetWifiButton.textContent = "Forget This Network...";
+    this.bleMessage.textContent =
+      "The saved Wi-Fi network was removed from this Posture Pad.";
+    this.onWifiForgotten?.();
+  }
+
+  startWifiForgetTimeout() {
+    this.stopWifiForgetTimeout();
+
+    this.wifiForgetTimeout = window.setTimeout(() => {
+      if (!this.isForgettingWifi) {
+        return;
+      }
+
+      this.isForgettingWifi = false;
+      this.forgetWifiButton.disabled = false;
+      this.forgetWifiButton.textContent = "Forget This Network...";
+      this.bleMessage.textContent =
+        "Could not confirm that the Wi-Fi network was forgotten.";
+    }, WIFI_FORGET_TIMEOUT_MS);
+  }
+
+  stopWifiForgetTimeout() {
+    if (!this.wifiForgetTimeout) {
+      return;
+    }
+
+    window.clearTimeout(this.wifiForgetTimeout);
+    this.wifiForgetTimeout = null;
   }
 
   getWifiConnectionErrorMessage(ssid) {
