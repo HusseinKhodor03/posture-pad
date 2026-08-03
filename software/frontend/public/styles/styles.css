@@ -611,6 +611,12 @@ body.appBooting .tabPanel {
   font: inherit;
 }
 
+.wifiDialogCard input:disabled {
+  color: #6b7280;
+  background: #f1f5f9;
+  cursor: not-allowed;
+}
+
 .wifiDialogActions {
   display: flex;
   justify-content: flex-end;

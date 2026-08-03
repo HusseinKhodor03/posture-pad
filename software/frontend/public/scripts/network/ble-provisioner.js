@@ -623,10 +623,13 @@ export class BleProvisioner {
     this.wifiPassword.value = "";
     this.wifiDialog.hidden = false;
     this.isConnectingWifi = false;
+    this.setWifiDialogInputsDisabled(false);
     this.updateWifiConnectButton();
 
     if (network.secure) {
       this.wifiPassword.focus();
+    } else {
+      this.connectWifiButton.focus();
     }
   }
 
@@ -640,6 +643,7 @@ export class BleProvisioner {
     this.wifiPassword.value = "";
     this.wifiDialog.hidden = false;
     this.isConnectingWifi = false;
+    this.setWifiDialogInputsDisabled(false);
     this.updateWifiConnectButton();
     this.wifiSsid.focus();
   }
@@ -655,6 +659,7 @@ export class BleProvisioner {
     this.wifiPasswordLabel.hidden = false;
     this.wifiSsid.value = "";
     this.wifiPassword.value = "";
+    this.setWifiDialogInputsDisabled(false);
     this.clearWifiDialogMessage();
     this.updateWifiConnectButton();
   }
@@ -792,6 +797,7 @@ export class BleProvisioner {
     this.startWifiConnectionTimeout(ssid);
     this.wifiDialogMessage.classList.remove("error");
     this.wifiDialogMessage.textContent = `Connecting to "${ssid}"...`;
+    this.setWifiDialogInputsDisabled(true);
     this.cancelWifiButton.disabled = true;
     this.connectWifiButton.disabled = true;
     this.connectWifiButton.textContent = "Connecting...";
@@ -804,6 +810,7 @@ export class BleProvisioner {
     this.stopWifiConnectionTimeout();
     this.cancelWifiButton.disabled = false;
     this.connectWifiButton.textContent = "Connect";
+    this.setWifiDialogInputsDisabled(false);
     this.wifiSsid.value = "";
     this.wifiPassword.value = "";
     this.closeWifiDialog();
@@ -820,8 +827,9 @@ export class BleProvisioner {
     this.wifiDialogMessage.textContent = message;
     this.cancelWifiButton.disabled = false;
     this.connectWifiButton.textContent = "Connect";
+    this.setWifiDialogInputsDisabled(false);
     this.updateWifiConnectButton();
-    this.focusWifiDialogInput();
+    this.focusWifiDialogErrorInput();
   }
 
   clearWifiDialogMessage() {
@@ -831,6 +839,11 @@ export class BleProvisioner {
   showWifiDialogMessage(message, isError = false) {
     this.wifiDialogMessage.classList.toggle("error", isError);
     this.wifiDialogMessage.textContent = message;
+  }
+
+  setWifiDialogInputsDisabled(disabled) {
+    this.wifiSsid.disabled = disabled;
+    this.wifiPassword.disabled = disabled;
   }
 
   finishForgetWifiNetwork() {
@@ -912,6 +925,16 @@ export class BleProvisioner {
     }
 
     this.wifiSsid.focus();
+  }
+
+  focusWifiDialogErrorInput() {
+    if (!this.wifiPasswordLabel.hidden) {
+      this.wifiPassword.focus();
+      this.wifiPassword.select();
+      return;
+    }
+
+    this.connectWifiButton.focus();
   }
 
   async claimSetupSession(deviceId) {
