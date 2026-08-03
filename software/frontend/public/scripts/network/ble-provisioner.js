@@ -155,7 +155,8 @@ export class BleProvisioner {
       await this.releaseSetupSession();
       this.stopSetupSessionHeartbeat();
       this.setupSessionId = "";
-      this.bleMessage.textContent = "Could not connect to the Posture Pad.";
+      this.bleMessage.textContent =
+        "Make sure your device is powered on and nearby.";
       this.connectBleButton.disabled = false;
     }
   }
