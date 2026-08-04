@@ -57,7 +57,7 @@ void DeviceManager::update()
     networkManager.update();
     handleNetworkConnectionTimeout();
 
-    if (wifiConnectionPending && networkManager.isConnected())
+    if (wifiConnectionPending && networkManager.isWifiConnected())
     {
         if (saveCredentialsOnConnect)
         {
@@ -65,12 +65,12 @@ void DeviceManager::update()
             saveCredentialsOnConnect = false;
         }
 
-        bleProvisioner.setStatus("connected");
+        bleProvisioner.setStatus("connected", networkManager.getSsid());
         wifiConnectionPending = false;
         rollbackCredentialsAvailable = false;
         rollbackSsid = "";
         rollbackPassword = "";
-        Serial.println("Connected to Wi-Fi and TCP server!");
+        Serial.println("Connected to Wi-Fi!");
     }
 
     updateLed();

@@ -169,6 +169,18 @@ function main() {
       });
       bleProvisioner?.setConnectedWifiSsid(selectedDeviceWifiSsid);
     },
+    onWifiConnected: (wifiSsid) => {
+      selectedDeviceWifiSsid = wifiSsid;
+      updateConfigView({
+        deviceLabel: selectedDeviceLabel,
+        deviceId: selectedDeviceId,
+        hasSelectedDevice: Boolean(selectedDeviceId),
+        isOnline: selectedDeviceStatus === "online",
+        isScanningWifi,
+        isSetupConnected,
+        wifiSsid: selectedDeviceWifiSsid,
+      });
+    },
     onWifiForgotten: () => {
       selectedDeviceStatus = "offline";
       selectedDeviceWifiSsid = "";

@@ -18,11 +18,13 @@ export class BleProvisioner {
   constructor({
     onDeviceConnected,
     onDeviceDisconnected,
+    onWifiConnected,
     onWifiForgotten,
     onWifiScanStateChanged,
   }) {
     this.onDeviceConnected = onDeviceConnected;
     this.onDeviceDisconnected = onDeviceDisconnected;
+    this.onWifiConnected = onWifiConnected;
     this.onWifiForgotten = onWifiForgotten;
     this.onWifiScanStateChanged = onWifiScanStateChanged;
     this.wifiSsidCharacteristic = null;
@@ -401,13 +403,19 @@ export class BleProvisioner {
     }
   }
 
-  updateWifiStatus(status) {
+  updateWifiStatus(statusValue) {
+    const { status, wifiSsid } = this.parseWifiStatus(statusValue);
+
     this.bleDeviceStatus.textContent = status;
 
     if (status === "connecting") {
       this.bleMessage.textContent = "The Posture Pad is connecting to Wi-Fi...";
     } else if (status === "connected") {
       this.bleMessage.textContent = "The Posture Pad is connected to Wi-Fi.";
+      if (wifiSsid) {
+        this.setConnectedWifiSsid(wifiSsid);
+        this.onWifiConnected?.(wifiSsid);
+      }
     } else if (status === "unconfigured" && this.isForgettingWifi) {
       this.finishForgetWifiNetwork();
     } else if (status === "unconfigured" && this.pendingWifiSsid) {
@@ -421,6 +429,17 @@ export class BleProvisioner {
 
   handleWifiStatusChange(event) {
     this.updateWifiStatus(new TextDecoder().decode(event.target.value));
+  }
+
+  parseWifiStatus(statusValue) {
+    if (!statusValue.startsWith("connected:")) {
+      return { status: statusValue, wifiSsid: "" };
+    }
+
+    return {
+      status: "connected",
+      wifiSsid: statusValue.substring("connected:".length),
+    };
   }
 
   async handleScanResultsChange(event) {

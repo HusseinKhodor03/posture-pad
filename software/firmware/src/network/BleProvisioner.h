@@ -14,6 +14,7 @@ public:
     bool takeForgetRequest();
     void scanWifiNetworks();
     void setStatus(const String &status);
+    void setStatus(const String &status, const String &wifiSsid);
     const String &getDeviceId() const;
     const String &getPairingToken() const;
 

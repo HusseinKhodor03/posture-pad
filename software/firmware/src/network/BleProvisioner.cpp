@@ -44,7 +44,7 @@ void BleProvisioner::begin()
     NimBLECharacteristic *wifiSsidCharacteristic = service->createCharacteristic(WIFI_SSID_UUID, NIMBLE_PROPERTY::WRITE, 32);
     NimBLECharacteristic *wifiPasswordCharacteristic = service->createCharacteristic(WIFI_PASSWORD_UUID, NIMBLE_PROPERTY::WRITE, 64);
     NimBLECharacteristic *commandCharacteristic = service->createCharacteristic(COMMAND_UUID, NIMBLE_PROPERTY::WRITE, 24);
-    statusCharacteristic = service->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 24);
+    statusCharacteristic = service->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 64);
     scanResultsCharacteristic = service->createCharacteristic(WIFI_SCAN_RESULTS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 512);
     setupSessionCharacteristic = service->createCharacteristic(SETUP_SESSION_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, 24);
 
@@ -292,11 +292,26 @@ void BleProvisioner::scanWifiNetworks()
 
 void BleProvisioner::setStatus(const String &status)
 {
-    if (statusCharacteristic == nullptr || status == currentStatus)
+    setStatus(status, "");
+}
+
+void BleProvisioner::setStatus(const String &status, const String &wifiSsid)
+{
+    if (statusCharacteristic == nullptr)
         return;
 
-    currentStatus = status;
-    statusCharacteristic->setValue(status.c_str());
+    String statusValue = status;
+    if (status == "connected" && !wifiSsid.isEmpty())
+    {
+        statusValue += ":";
+        statusValue += wifiSsid;
+    }
+
+    if (statusValue == currentStatus)
+        return;
+
+    currentStatus = statusValue;
+    statusCharacteristic->setValue(statusValue.c_str());
     statusCharacteristic->notify();
 }
 
