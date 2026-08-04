@@ -223,6 +223,11 @@ body.appBooting .tabPanel {
   line-height: 1.6;
 }
 
+#bleMessage.error {
+  color: #d92d20;
+  font-weight: 700;
+}
+
 .configWifiRow {
   display: flex;
   justify-content: space-between;

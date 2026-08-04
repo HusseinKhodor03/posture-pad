@@ -143,6 +143,7 @@ export class BleProvisioner {
     }
 
     this.connectBleButton.disabled = true;
+    this.bleMessage.classList.remove("error");
     this.bleMessage.textContent =
       "Choose your Posture Pad from the browser prompt.";
 
@@ -262,6 +263,7 @@ export class BleProvisioner {
     this.bleDeviceId.textContent = deviceId;
     this.bleDeviceDetails.hidden = false;
     this.closeWifiDialog();
+    this.bleMessage.classList.remove("error");
     this.bleMessage.textContent = "Your Posture Pad is ready for Wi-Fi setup.";
     this.updateWifiStatus(decoder.decode(statusValue));
     this.connectBleButton.textContent = "Connected";
@@ -788,14 +790,15 @@ export class BleProvisioner {
     this.wifiConnectionInterrupted = false;
     this.isConnectingWifi = false;
     this.isForgettingWifi = false;
-    this.bleDeviceName.textContent = "Connect Posture Pad";
+    this.bleDeviceName.textContent = "Connect Device";
+    this.bleMessage.classList.remove("error");
     this.bleMessage.textContent =
       "Make sure your device is powered on and nearby.";
     this.bleDeviceDetails.hidden = true;
     this.closeWifiDialog();
     this.connectWifiButton.disabled = true;
     this.connectBleButton.disabled = false;
-    this.connectBleButton.textContent = "Connect Posture Pad";
+    this.connectBleButton.textContent = "Connect Device";
     this.scanNetworksButton.disabled = true;
     this.otherNetworkButton.disabled = true;
     this.switchDeviceButton.hidden = true;
@@ -981,13 +984,14 @@ export class BleProvisioner {
 
   showBusyDeviceMessage(deviceId) {
     this.setWifiScanState(false);
-    this.bleDeviceName.textContent = `Posture Pad ${deviceId.slice(-6)}`;
+    this.bleDeviceName.textContent = "Connect Device";
+    this.bleMessage.classList.add("error");
     this.bleMessage.textContent =
-      "This Posture Pad is already being configured in another browser.";
+      `PosturePad-${deviceId.slice(-6)} is already being configured in another browser.`;
     this.bleDeviceDetails.hidden = true;
     this.closeWifiDialog();
     this.connectBleButton.disabled = false;
-    this.connectBleButton.textContent = "Try Again";
+    this.connectBleButton.textContent = "Connect Device";
     this.connectWifiButton.disabled = true;
     this.scanNetworksButton.disabled = true;
     this.otherNetworkButton.disabled = true;
