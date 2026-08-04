@@ -43,7 +43,6 @@ export class BleProvisioner {
     this.pendingWifiSsid = "";
     this.wifiConnectionInterrupted = false;
     this.bleDevice = null;
-    this.isSwitchingDevice = false;
     this.isScanningWifi = false;
     this.isConnectingWifi = false;
     this.isForgettingWifi = false;
@@ -162,36 +161,39 @@ export class BleProvisioner {
   }
 
   async switchDevice() {
-    if (!navigator.bluetooth) {
-      this.bleMessage.textContent =
-        "This browser does not support Web Bluetooth. Try Chrome or Edge.";
-      return;
-    }
-
-    this.switchDeviceButton.disabled = true;
+    this.disableSetupButtonsForSwitch();
     this.bleMessage.textContent =
-      "Choose another Posture Pad from the browser prompt.";
+      "Disconnecting current Posture Pad...";
 
     try {
-      const device = await this.requestBluetoothDevice();
+      await this.releaseSetupSession();
+      this.stopSetupSessionHeartbeat();
+      this.setupSessionId = "";
 
-      if (this.bleDevice?.id === device.id) {
-        this.bleMessage.textContent =
-          "This browser is already connected to that Posture Pad.";
-        this.switchDeviceButton.disabled = false;
-        return;
+      if (this.bleDevice?.gatt.connected) {
+        this.bleDevice.gatt.disconnect();
       }
-
-      this.isSwitchingDevice = true;
-      await this.disconnectCurrentDeviceForSwitch();
-      await this.connectSelectedDevice(device);
     } catch (error) {
-      console.error("Could not switch Posture Pads:", error);
-      this.bleMessage.textContent = "Could not switch Posture Pads.";
-      this.switchDeviceButton.disabled = false;
+      console.error("Could not disconnect Posture Pad:", error);
     } finally {
-      this.isSwitchingDevice = false;
+      this.reloadConfigurationPage();
     }
+  }
+
+  reloadConfigurationPage() {
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}#configuration`,
+    );
+    window.location.reload();
+  }
+
+  disableSetupButtonsForSwitch() {
+    this.scanNetworksButton.disabled = true;
+    this.otherNetworkButton.disabled = true;
+    this.forgetWifiButton.disabled = true;
+    this.switchDeviceButton.disabled = true;
   }
 
   async requestBluetoothDevice() {
@@ -260,23 +262,10 @@ export class BleProvisioner {
     this.bleDeviceId.textContent = deviceId;
     this.bleDeviceDetails.hidden = false;
     this.closeWifiDialog();
-    this.otherNetworkButton.disabled = false;
-    this.switchDeviceButton.disabled = false;
     this.bleMessage.textContent = "Your Posture Pad is ready for Wi-Fi setup.";
     this.updateWifiStatus(decoder.decode(statusValue));
     this.connectBleButton.textContent = "Connected";
-    this.scanNetworksButton.disabled = false;
     this.scanWifiNetworks();
-  }
-
-  async disconnectCurrentDeviceForSwitch() {
-    await this.releaseSetupSession();
-    this.stopSetupSessionHeartbeat();
-    this.setupSessionId = "";
-
-    if (this.bleDevice?.gatt.connected) {
-      this.bleDevice.gatt.disconnect();
-    }
   }
 
   async sendWifiCredentials(
@@ -818,9 +807,7 @@ export class BleProvisioner {
     this.pendingScanNetworks = [];
     this.networkListSignature = "";
 
-    if (!this.isSwitchingDevice) {
-      this.onDeviceDisconnected?.();
-    }
+    this.onDeviceDisconnected?.();
   }
 
   startWifiConnectionAttempt(ssid) {

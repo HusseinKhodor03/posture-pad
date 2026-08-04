@@ -325,6 +325,11 @@ body.appBooting .tabPanel {
   background: #fdd8d8;
 }
 
+.dangerButton:disabled {
+  background: #eef2f6;
+  color: #8a96a8;
+}
+
 .networkTitleRow {
   display: flex;
   justify-content: space-between;
