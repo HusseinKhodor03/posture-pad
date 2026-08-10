@@ -5,13 +5,10 @@ import {
 } from "../config/constants.js";
 import { createWifiSignalIcon } from "../ui/wifi-signal-icon.js";
 import { BleTransport } from "./ble/ble-transport.js";
+import { SetupSession } from "./ble/setup-session.js";
 import {
-  buildClaimCommand,
-  buildClaimedSetupSessionStatus,
   buildConnectCommand,
   buildForgetCommand,
-  buildPingCommand,
-  buildReleaseCommand,
   buildScanCommand,
   buildScanPageCommand,
   parseScanResults,
@@ -37,8 +34,9 @@ export class BleProvisioner {
         this.handleDisconnect(device);
       },
     });
-    this.setupSessionId = "";
-    this.setupSessionHeartbeat = null;
+    this.setupSession = new SetupSession({
+      bleTransport: this.bleTransport,
+    });
     this.wifiScanTimeout = null;
     this.wifiConnectionTimeout = null;
     this.wifiForgetTimeout = null;
@@ -159,8 +157,7 @@ export class BleProvisioner {
     } catch (error) {
       console.error("Bluetooth connection failed:", error);
       await this.releaseSetupSession();
-      this.stopSetupSessionHeartbeat();
-      this.setupSessionId = "";
+      this.setupSession.clearLocal();
       this.bleMessage.textContent =
         "Make sure your device is powered on and nearby.";
       this.connectBleButton.disabled = false;
@@ -174,8 +171,7 @@ export class BleProvisioner {
 
     try {
       await this.releaseSetupSession();
-      this.stopSetupSessionHeartbeat();
-      this.setupSessionId = "";
+      this.setupSession.clearLocal();
 
       if (this.bleTransport.isConnected()) {
         this.bleTransport.disconnect();
@@ -213,7 +209,7 @@ export class BleProvisioner {
     const deviceId = await this.bleTransport.readText("deviceId");
     const statusValue = await this.bleTransport.readText("status");
 
-    const setupSessionClaimed = await this.claimSetupSession(deviceId);
+    const setupSessionClaimed = await this.setupSession.claim(deviceId);
 
     if (!setupSessionClaimed) {
       this.showBusyDeviceMessage(deviceId);
@@ -291,7 +287,7 @@ export class BleProvisioner {
       await this.bleTransport.writeText("wifiPassword", password);
       await this.bleTransport.writeText(
         "command",
-        buildConnectCommand(this.setupSessionId),
+        buildConnectCommand(this.setupSession.getSessionId()),
       );
 
       if (this.bleDeviceStatus.textContent === "unconfigured") {
@@ -326,7 +322,7 @@ export class BleProvisioner {
     try {
       await this.bleTransport.writeText(
         "command",
-        buildScanCommand(this.setupSessionId),
+        buildScanCommand(this.setupSession.getSessionId()),
       );
     } catch (error) {
       console.error("Could not start Wi-Fi scan:", error);
@@ -341,7 +337,7 @@ export class BleProvisioner {
     try {
       await this.bleTransport.writeText(
         "command",
-        buildScanPageCommand(this.setupSessionId, page),
+        buildScanPageCommand(this.setupSession.getSessionId(), page),
       );
     } catch (error) {
       console.error("Could not request Wi-Fi scan page:", error);
@@ -355,7 +351,7 @@ export class BleProvisioner {
   async forgetWifiNetwork() {
     if (
       !this.bleTransport.hasEndpoint("command") ||
-      !this.setupSessionId ||
+      !this.setupSession.hasSession() ||
       this.isForgettingWifi
     ) {
       return;
@@ -370,7 +366,7 @@ export class BleProvisioner {
     try {
       await this.bleTransport.writeText(
         "command",
-        buildForgetCommand(this.setupSessionId),
+        buildForgetCommand(this.setupSession.getSessionId()),
       );
     } catch (error) {
       console.error("Could not forget Wi-Fi network:", error);
@@ -548,6 +544,7 @@ export class BleProvisioner {
 
   setWifiScanState(isScanningWifi) {
     this.isScanningWifi = isScanningWifi;
+    this.setupSession.setHeartbeatSuspended(isScanningWifi);
 
     if (isScanningWifi) {
       this.startWifiScanTimeout();
@@ -759,8 +756,7 @@ export class BleProvisioner {
     this.setWifiScanState(false);
     this.stopWifiConnectionTimeout();
     this.stopWifiForgetTimeout();
-    this.stopSetupSessionHeartbeat();
-    this.setupSessionId = "";
+    this.setupSession.clearLocal();
     this.bleTransport.clear();
     this.pendingWifiSsid = "";
     this.wifiConnectionInterrupted = false;
@@ -935,29 +931,6 @@ export class BleProvisioner {
     this.connectWifiButton.focus();
   }
 
-  async claimSetupSession(deviceId) {
-    this.setupSessionId = this.createSetupSessionId();
-
-    await this.bleTransport.writeText(
-      "command",
-      buildClaimCommand(this.setupSessionId),
-    );
-
-    const sessionStatus = await this.bleTransport.readText("setupSession");
-    const expectedStatus = buildClaimedSetupSessionStatus(this.setupSessionId);
-
-    if (sessionStatus !== expectedStatus) {
-      console.warn(
-        `Posture Pad ${deviceId} setup session rejected: ${sessionStatus}`,
-      );
-      this.setupSessionId = "";
-      return false;
-    }
-
-    this.startSetupSessionHeartbeat();
-    return true;
-  }
-
   showBusyDeviceMessage(deviceId) {
     this.setWifiScanState(false);
     this.bleDeviceName.textContent = "Connect Device";
@@ -981,63 +954,7 @@ export class BleProvisioner {
     this.networkListSignature = "";
   }
 
-  startSetupSessionHeartbeat() {
-    this.stopSetupSessionHeartbeat();
-    this.setupSessionHeartbeat = window.setInterval(() => {
-      this.sendSetupSessionHeartbeat();
-    }, 5000);
-  }
-
-  stopSetupSessionHeartbeat() {
-    if (!this.setupSessionHeartbeat) {
-      return;
-    }
-
-    window.clearInterval(this.setupSessionHeartbeat);
-    this.setupSessionHeartbeat = null;
-  }
-
-  async sendSetupSessionHeartbeat() {
-    if (
-      !this.bleTransport.hasEndpoint("command") ||
-      !this.setupSessionId ||
-      this.isScanningWifi
-    ) {
-      return;
-    }
-
-    try {
-      await this.bleTransport.writeText(
-        "command",
-        buildPingCommand(this.setupSessionId),
-      );
-    } catch (error) {
-      console.error("Could not refresh BLE setup session:", error);
-    }
-  }
-
   async releaseSetupSession() {
-    if (!this.bleTransport.hasEndpoint("command") || !this.setupSessionId) {
-      return;
-    }
-
-    try {
-      await this.bleTransport.writeText(
-        "command",
-        buildReleaseCommand(this.setupSessionId),
-      );
-    } catch {
-      // The page may already be unloading or the BLE link may already be gone.
-    }
-  }
-
-  createSetupSessionId() {
-    const bytes = new Uint8Array(4);
-    crypto.getRandomValues(bytes);
-
-    return Array.from(bytes)
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("")
-      .toUpperCase();
+    await this.setupSession.release();
   }
 }
