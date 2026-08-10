@@ -13,6 +13,19 @@ import {
   WIFI_SSID_UUID,
 } from "../config/constants.js";
 import { createWifiSignalIcon } from "../ui/wifi-signal-icon.js";
+import {
+  buildClaimCommand,
+  buildClaimedSetupSessionStatus,
+  buildConnectCommand,
+  buildForgetCommand,
+  buildPingCommand,
+  buildReleaseCommand,
+  buildScanCommand,
+  buildScanPageCommand,
+  parseScanResults,
+  parseWifiStatus,
+  validateWifiCredentials,
+} from "./ble/ble-provisioning-protocol.js";
 
 export class BleProvisioner {
   constructor({
@@ -281,16 +294,14 @@ export class BleProvisioner {
       return;
     }
 
-    const encoder = new TextEncoder();
-    const ssidValue = encoder.encode(ssid);
-    const passwordValue = encoder.encode(password);
+    const validation = validateWifiCredentials(ssid, password);
 
-    if (ssidValue.length === 0) {
+    if (!validation.isValid && validation.reason === "emptySsid") {
       this.bleMessage.textContent = "Enter a Wi-Fi network name.";
       return;
     }
 
-    if (ssidValue.length > 32 || passwordValue.length > 64) {
+    if (!validation.isValid && validation.reason === "tooLong") {
       this.bleMessage.textContent =
         "The network name or password is too long.";
       return;
@@ -302,6 +313,10 @@ export class BleProvisioner {
       this.focusWifiDialogInput();
       return;
     }
+
+    const encoder = new TextEncoder();
+    const ssidValue = encoder.encode(ssid);
+    const passwordValue = encoder.encode(password);
 
     if (button) {
       button.disabled = true;
@@ -315,7 +330,7 @@ export class BleProvisioner {
         passwordValue,
       );
       await this.commandCharacteristic.writeValueWithResponse(
-        encoder.encode(`connect:${this.setupSessionId}`),
+        encoder.encode(buildConnectCommand(this.setupSessionId)),
       );
 
       if (this.bleDeviceStatus.textContent === "unconfigured") {
@@ -349,7 +364,7 @@ export class BleProvisioner {
 
     try {
       await this.commandCharacteristic.writeValueWithResponse(
-        new TextEncoder().encode(`scan:${this.setupSessionId}`),
+        new TextEncoder().encode(buildScanCommand(this.setupSessionId)),
       );
     } catch (error) {
       console.error("Could not start Wi-Fi scan:", error);
@@ -363,7 +378,9 @@ export class BleProvisioner {
   async requestScanPage(page) {
     try {
       await this.commandCharacteristic.writeValueWithResponse(
-        new TextEncoder().encode(`scan_page:${this.setupSessionId}:${page}`),
+        new TextEncoder().encode(
+          buildScanPageCommand(this.setupSessionId, page),
+        ),
       );
     } catch (error) {
       console.error("Could not request Wi-Fi scan page:", error);
@@ -391,7 +408,7 @@ export class BleProvisioner {
 
     try {
       await this.commandCharacteristic.writeValueWithResponse(
-        new TextEncoder().encode(`forget:${this.setupSessionId}`),
+        new TextEncoder().encode(buildForgetCommand(this.setupSessionId)),
       );
     } catch (error) {
       console.error("Could not forget Wi-Fi network:", error);
@@ -404,7 +421,7 @@ export class BleProvisioner {
   }
 
   updateWifiStatus(statusValue) {
-    const { status, wifiSsid } = this.parseWifiStatus(statusValue);
+    const { status, wifiSsid } = parseWifiStatus(statusValue);
 
     this.bleDeviceStatus.textContent = status;
 
@@ -431,24 +448,13 @@ export class BleProvisioner {
     this.updateWifiStatus(new TextDecoder().decode(event.target.value));
   }
 
-  parseWifiStatus(statusValue) {
-    if (!statusValue.startsWith("connected:")) {
-      return { status: statusValue, wifiSsid: "" };
-    }
-
-    return {
-      status: "connected",
-      wifiSsid: statusValue.substring("connected:".length),
-    };
-  }
-
   async handleScanResultsChange(event) {
     let scanResults;
 
     try {
       const value = event.target.value;
       const scanResultText = new TextDecoder().decode(value);
-      scanResults = JSON.parse(scanResultText);
+      scanResults = parseScanResults(scanResultText);
     } catch (error) {
       console.error("Could not read Wi-Fi scan results:", error);
       this.networkListMessage.textContent =
@@ -982,12 +988,12 @@ export class BleProvisioner {
     this.setupSessionId = this.createSetupSessionId();
 
     await this.commandCharacteristic.writeValueWithResponse(
-      new TextEncoder().encode(`claim:${this.setupSessionId}`),
+      new TextEncoder().encode(buildClaimCommand(this.setupSessionId)),
     );
 
     const sessionStatusValue = await this.setupSessionCharacteristic.readValue();
     const sessionStatus = new TextDecoder().decode(sessionStatusValue);
-    const expectedStatus = `claimed:${this.setupSessionId}`;
+    const expectedStatus = buildClaimedSetupSessionStatus(this.setupSessionId);
 
     if (sessionStatus !== expectedStatus) {
       console.warn(
@@ -1047,7 +1053,7 @@ export class BleProvisioner {
 
     try {
       await this.commandCharacteristic.writeValueWithResponse(
-        new TextEncoder().encode(`ping:${this.setupSessionId}`),
+        new TextEncoder().encode(buildPingCommand(this.setupSessionId)),
       );
     } catch (error) {
       console.error("Could not refresh BLE setup session:", error);
@@ -1061,7 +1067,7 @@ export class BleProvisioner {
 
     try {
       await this.commandCharacteristic.writeValueWithResponse(
-        new TextEncoder().encode(`release:${this.setupSessionId}`),
+        new TextEncoder().encode(buildReleaseCommand(this.setupSessionId)),
       );
     } catch {
       // The page may already be unloading or the BLE link may already be gone.
