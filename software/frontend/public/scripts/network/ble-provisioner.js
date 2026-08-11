@@ -3,6 +3,7 @@ import {
   WIFI_FORGET_TIMEOUT_MS,
   WIFI_SCAN_TIMEOUT_MS,
 } from "../config/constants.js";
+import { WifiCredentialsDialogView } from "../ui/wifi-credentials-dialog-view.js";
 import { WifiNetworkListView } from "../ui/wifi-network-list-view.js";
 import { BleTransport } from "./ble/ble-transport.js";
 import { SetupSession } from "./ble/setup-session.js";
@@ -58,17 +59,14 @@ export class BleProvisioner {
     this.bleDeviceDetails = document.getElementById("bleDeviceDetails");
     this.bleDeviceId = document.getElementById("bleDeviceId");
     this.bleDeviceStatus = document.getElementById("bleDeviceStatus");
-    this.wifiDialog = document.getElementById("wifiDialog");
-    this.wifiDialogTitle = document.getElementById("wifiDialogTitle");
-    this.wifiDialogMessage = document.getElementById("wifiDialogMessage");
-    this.wifiSsidLabel = document.getElementById("wifiSsidLabel");
-    this.wifiSsid = document.getElementById("wifiSsid");
-    this.wifiPasswordLabel = document.getElementById("wifiPasswordLabel");
-    this.wifiPassword = document.getElementById("wifiPassword");
-    this.wifiSecurityLabel = document.getElementById("wifiSecurityLabel");
-    this.wifiSecurity = document.getElementById("wifiSecurity");
-    this.connectWifiButton = document.getElementById("connectWifiButton");
-    this.cancelWifiButton = document.getElementById("cancelWifiButton");
+    this.wifiDialogView = new WifiCredentialsDialogView({
+      onSubmit: (credentials) => {
+        this.sendWifiCredentials(credentials);
+      },
+      onCancel: () => {
+        this.closeWifiDialog();
+      },
+    });
     this.scanNetworksButton = document.getElementById("scanNetworksButton");
     this.otherNetworkButton = document.getElementById("otherNetworkButton");
     this.forgetWifiButton = document.getElementById("forgetWifiButton");
@@ -84,27 +82,6 @@ export class BleProvisioner {
 
     this.connectBleButton.addEventListener("click", () => {
       this.connectDevice();
-    });
-
-    this.connectWifiButton.addEventListener("click", () => {
-      this.sendWifiCredentials();
-    });
-
-    this.wifiSsid.addEventListener("input", () => {
-      this.updateWifiConnectButton();
-    });
-
-    this.wifiPassword.addEventListener("input", () => {
-      this.updateWifiConnectButton();
-    });
-
-    this.wifiSecurity.addEventListener("change", () => {
-      this.updateManualNetworkSecurity();
-      this.updateWifiConnectButton();
-    });
-
-    this.cancelWifiButton.addEventListener("click", () => {
-      this.closeWifiDialog();
     });
 
     this.scanNetworksButton.addEventListener("click", () => {
@@ -236,15 +213,12 @@ export class BleProvisioner {
     this.scanWifiNetworks();
   }
 
-  async sendWifiCredentials(
-    ssid = this.selectedNetwork?.ssid ?? this.wifiSsid.value.trim(),
-    password = this.isWifiPasswordRequired() ? this.wifiPassword.value : "",
-    button = this.connectWifiButton,
-  ) {
+  async sendWifiCredentials(credentials = this.wifiDialogView.getCredentials()) {
     if (this.isConnectingWifi) {
       return;
     }
 
+    const { ssid, password } = credentials;
     const validation = validateWifiCredentials(ssid, password);
 
     if (!validation.isValid && validation.reason === "emptySsid") {
@@ -259,15 +233,12 @@ export class BleProvisioner {
     }
 
     if (this.isConnectedSsid(ssid)) {
-      this.showWifiDialogMessage(`"${ssid}" is already connected.`, true);
-      this.updateWifiConnectButton();
-      this.focusWifiDialogInput();
+      this.wifiDialogView.showMessage(`"${ssid}" is already connected.`, {
+        isError: true,
+      });
+      this.wifiDialogView.updateSubmitState();
+      this.wifiDialogView.focusInput();
       return;
-    }
-
-    if (button) {
-      button.disabled = true;
-      button.textContent = "Connecting...";
     }
 
     try {
@@ -507,94 +478,23 @@ export class BleProvisioner {
   }
 
   openSelectedNetworkDialog(network) {
-    this.wifiDialogTitle.textContent = `Connect to ${network.ssid}`;
-    this.showWifiDialogMessage(
-      network.secure ? "" : "This is an open network. No password is required.",
-    );
-    this.wifiSsidLabel.hidden = true;
-    this.wifiSecurityLabel.hidden = true;
-    this.wifiPasswordLabel.hidden = !network.secure;
-    this.wifiSsid.value = network.ssid;
-    this.wifiPassword.value = "";
-    this.wifiSecurity.value = network.secure ? "secure" : "none";
-    this.wifiDialog.hidden = false;
+    this.wifiDialogView.openForNetwork(network);
     this.isConnectingWifi = false;
-    this.setWifiDialogInputsDisabled(false);
-    this.updateWifiConnectButton();
-
-    if (network.secure) {
-      this.wifiPassword.focus();
-    } else {
-      this.connectWifiButton.focus();
-    }
   }
 
   openManualNetworkDialog() {
     this.selectedNetwork = null;
-    this.wifiDialogTitle.textContent = "Other Network";
-    this.clearWifiDialogMessage();
-    this.wifiSsidLabel.hidden = false;
-    this.wifiSecurityLabel.hidden = false;
-    this.wifiSecurity.value = "secure";
-    this.wifiSsid.value = "";
-    this.wifiPassword.value = "";
-    this.updateManualNetworkSecurity();
-    this.wifiDialog.hidden = false;
+    this.wifiDialogView.openManual();
     this.isConnectingWifi = false;
-    this.setWifiDialogInputsDisabled(false);
-    this.updateWifiConnectButton();
-    this.wifiSsid.focus();
   }
 
-  closeWifiDialog() {
-    if (this.isConnectingWifi) {
+  closeWifiDialog(options = {}) {
+    if (!options.force && this.isConnectingWifi) {
       return;
     }
 
     this.selectedNetwork = null;
-    this.wifiDialog.hidden = true;
-    this.wifiSsidLabel.hidden = false;
-    this.wifiSecurityLabel.hidden = true;
-    this.wifiPasswordLabel.hidden = false;
-    this.wifiSecurity.value = "secure";
-    this.wifiSsid.value = "";
-    this.wifiPassword.value = "";
-    this.setWifiDialogInputsDisabled(false);
-    this.clearWifiDialogMessage();
-    this.updateWifiConnectButton();
-  }
-
-  updateWifiConnectButton() {
-    if (this.wifiDialog.hidden || this.isConnectingWifi) {
-      this.connectWifiButton.disabled = true;
-      return;
-    }
-
-    const hasNetworkName = this.wifiSsid.value.trim().length > 0;
-    const hasPassword = this.wifiPassword.value.length > 0;
-
-    this.connectWifiButton.disabled = this.selectedNetwork
-      ? this.selectedNetwork.secure && !hasPassword
-      : !hasNetworkName || (this.isWifiPasswordRequired() && !hasPassword);
-  }
-
-  updateManualNetworkSecurity() {
-    if (this.selectedNetwork) {
-      return;
-    }
-
-    const passwordRequired = this.isWifiPasswordRequired();
-    this.wifiPasswordLabel.hidden = !passwordRequired;
-
-    if (!passwordRequired) {
-      this.wifiPassword.value = "";
-    }
-  }
-
-  isWifiPasswordRequired() {
-    return this.selectedNetwork
-      ? this.selectedNetwork.secure
-      : this.wifiSecurity.value !== "none";
+    this.wifiDialogView.close(options);
   }
 
   setConnectedWifiSsid(wifiSsid) {
@@ -644,8 +544,7 @@ export class BleProvisioner {
     this.bleMessage.textContent =
       "Make sure your device is powered on and nearby.";
     this.bleDeviceDetails.hidden = true;
-    this.closeWifiDialog();
-    this.connectWifiButton.disabled = true;
+    this.closeWifiDialog({ force: true });
     this.connectBleButton.disabled = false;
     this.connectBleButton.textContent = "Connect Device";
     this.scanNetworksButton.disabled = true;
@@ -666,12 +565,7 @@ export class BleProvisioner {
     this.wifiConnectionInterrupted = false;
     this.isConnectingWifi = true;
     this.startWifiConnectionTimeout(ssid);
-    this.wifiDialogMessage.classList.remove("error");
-    this.wifiDialogMessage.textContent = `Connecting to "${ssid}"...`;
-    this.setWifiDialogInputsDisabled(true);
-    this.cancelWifiButton.disabled = true;
-    this.connectWifiButton.disabled = true;
-    this.connectWifiButton.textContent = "Connecting...";
+    this.wifiDialogView.showConnecting(ssid);
   }
 
   finishWifiConnectionAttempt() {
@@ -679,12 +573,7 @@ export class BleProvisioner {
     this.wifiConnectionInterrupted = false;
     this.isConnectingWifi = false;
     this.stopWifiConnectionTimeout();
-    this.cancelWifiButton.disabled = false;
-    this.connectWifiButton.textContent = "Connect";
-    this.setWifiDialogInputsDisabled(false);
-    this.wifiSsid.value = "";
-    this.wifiPassword.value = "";
-    this.closeWifiDialog();
+    this.closeWifiDialog({ force: true });
   }
 
   showWifiConnectionError(ssid, message) {
@@ -692,32 +581,11 @@ export class BleProvisioner {
     this.wifiConnectionInterrupted = false;
     this.isConnectingWifi = false;
     this.stopWifiConnectionTimeout();
-    this.wifiDialog.hidden = false;
-    this.wifiDialogTitle.textContent = this.selectedNetwork
-      ? `Connect to ${ssid}`
-      : "Other Network";
-    this.wifiDialogMessage.classList.add("error");
-    this.wifiDialogMessage.textContent = message;
-    this.cancelWifiButton.disabled = false;
-    this.connectWifiButton.textContent = "Connect";
-    this.setWifiDialogInputsDisabled(false);
-    this.updateWifiConnectButton();
-    this.focusWifiDialogErrorInput();
-  }
-
-  clearWifiDialogMessage() {
-    this.showWifiDialogMessage("");
-  }
-
-  showWifiDialogMessage(message, isError = false) {
-    this.wifiDialogMessage.classList.toggle("error", isError);
-    this.wifiDialogMessage.textContent = message;
-  }
-
-  setWifiDialogInputsDisabled(disabled) {
-    this.wifiSsid.disabled = disabled;
-    this.wifiPassword.disabled = disabled;
-    this.wifiSecurity.disabled = disabled;
+    this.wifiDialogView.showConnectionError({
+      ssid,
+      message,
+      isManual: !this.selectedNetwork,
+    });
   }
 
   finishForgetWifiNetwork() {
@@ -783,30 +651,6 @@ export class BleProvisioner {
     this.wifiConnectionTimeout = null;
   }
 
-  focusWifiDialogInput() {
-    if (this.wifiPasswordLabel.hidden) {
-      this.connectWifiButton.focus();
-      return;
-    }
-
-    if (this.wifiSsidLabel.hidden) {
-      this.wifiPassword.focus();
-      return;
-    }
-
-    this.wifiSsid.focus();
-  }
-
-  focusWifiDialogErrorInput() {
-    if (!this.wifiPasswordLabel.hidden) {
-      this.wifiPassword.focus();
-      this.wifiPassword.select();
-      return;
-    }
-
-    this.connectWifiButton.focus();
-  }
-
   showBusyDeviceMessage(deviceId) {
     this.setWifiScanState(false);
     this.bleDeviceName.textContent = "Connect Device";
@@ -814,10 +658,9 @@ export class BleProvisioner {
     this.bleMessage.textContent =
       `PosturePad-${deviceId.slice(-6)} is already being configured in another browser.`;
     this.bleDeviceDetails.hidden = true;
-    this.closeWifiDialog();
+    this.closeWifiDialog({ force: true });
     this.connectBleButton.disabled = false;
     this.connectBleButton.textContent = "Connect Device";
-    this.connectWifiButton.disabled = true;
     this.scanNetworksButton.disabled = true;
     this.otherNetworkButton.disabled = true;
     this.switchDeviceButton.hidden = true;
