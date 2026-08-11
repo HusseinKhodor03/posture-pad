@@ -3,7 +3,7 @@ import {
   WIFI_FORGET_TIMEOUT_MS,
   WIFI_SCAN_TIMEOUT_MS,
 } from "../config/constants.js";
-import { createWifiSignalIcon } from "../ui/wifi-signal-icon.js";
+import { WifiNetworkListView } from "../ui/wifi-network-list-view.js";
 import { BleTransport } from "./ble/ble-transport.js";
 import { SetupSession } from "./ble/setup-session.js";
 import {
@@ -43,7 +43,6 @@ export class BleProvisioner {
     this.selectedNetwork = null;
     this.scannedNetworks = [];
     this.pendingScanNetworks = [];
-    this.networkListSignature = "";
     this.connectedWifiSsid = "";
     this.pendingWifiSsid = "";
     this.wifiConnectionInterrupted = false;
@@ -75,8 +74,13 @@ export class BleProvisioner {
     this.forgetWifiButton = document.getElementById("forgetWifiButton");
     this.switchDeviceButton = document.getElementById("switchDeviceButton");
     this.networkSpinner = document.getElementById("networkSpinner");
-    this.networkListMessage = document.getElementById("networkListMessage");
-    this.networkList = document.getElementById("networkList");
+    this.networkListView = new WifiNetworkListView({
+      onNetworkSelected: (network) => {
+        if (!this.isConnectingWifi) {
+          this.selectNetwork(network);
+        }
+      },
+    });
 
     this.connectBleButton.addEventListener("click", () => {
       this.connectDevice();
@@ -117,21 +121,6 @@ export class BleProvisioner {
 
     this.switchDeviceButton.addEventListener("click", () => {
       this.switchDevice();
-    });
-
-    this.networkList.addEventListener("click", (event) => {
-      const networkButton = event.target.closest(".networkListButton");
-
-      if (!networkButton) {
-        return;
-      }
-
-      const networkIndex = Number(networkButton.dataset.networkIndex);
-      const network = this.scannedNetworks[networkIndex];
-
-      if (network && !this.isConnectingWifi) {
-        this.selectNetwork(network);
-      }
     });
 
     window.addEventListener("pagehide", () => {
@@ -311,11 +300,10 @@ export class BleProvisioner {
 
     this.scanNetworksButton.disabled = true;
     this.scanNetworksButton.textContent = "Scanning...";
-    this.networkListMessage.textContent = "";
-    this.networkList.replaceChildren();
+    this.networkListView.showMessage("");
+    this.networkListView.clear();
     this.scannedNetworks = [];
     this.pendingScanNetworks = [];
-    this.networkListSignature = "";
     this.closeWifiDialog();
     this.setWifiScanState(true);
 
@@ -326,7 +314,7 @@ export class BleProvisioner {
       );
     } catch (error) {
       console.error("Could not start Wi-Fi scan:", error);
-      this.networkListMessage.textContent = "Could not scan Wi-Fi networks.";
+      this.networkListView.showMessage("Could not scan Wi-Fi networks.");
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
       this.setWifiScanState(false);
@@ -341,7 +329,9 @@ export class BleProvisioner {
       );
     } catch (error) {
       console.error("Could not request Wi-Fi scan page:", error);
-      this.networkListMessage.textContent = "Could not read Wi-Fi scan results.";
+      this.networkListView.showMessage(
+        "Could not read Wi-Fi scan results.",
+      );
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
       this.setWifiScanState(false);
@@ -413,8 +403,7 @@ export class BleProvisioner {
       scanResults = parseScanResults(scanResultText);
     } catch (error) {
       console.error("Could not read Wi-Fi scan results:", error);
-      this.networkListMessage.textContent =
-        "Could not read Wi-Fi scan results.";
+      this.networkListView.showMessage("Could not read Wi-Fi scan results.");
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
       this.setWifiScanState(false);
@@ -423,13 +412,13 @@ export class BleProvisioner {
 
     if (scanResults.status === "scanning") {
       if (this.isScanningWifi) {
-        this.networkListMessage.textContent = "";
+        this.networkListView.showMessage("");
       }
       return;
     }
 
     if (scanResults.status !== "complete") {
-      this.networkListMessage.textContent = "Could not scan Wi-Fi networks.";
+      this.networkListView.showMessage("Could not scan Wi-Fi networks.");
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
       this.setWifiScanState(false);
@@ -454,88 +443,10 @@ export class BleProvisioner {
   }
 
   renderNetworkList(networks) {
-    const networkListSignature = this.buildNetworkListSignature(networks);
-    const networkListChanged =
-      networkListSignature !== this.networkListSignature;
-
     this.scannedNetworks = networks;
-
-    if (!networkListChanged) {
-      if (networks.length) {
-        this.networkListMessage.textContent = "";
-      }
-
-      return;
-    }
-
-    this.networkListSignature = networkListSignature;
-    this.networkList.replaceChildren();
-
-    if (!networks.length) {
-      this.networkListMessage.textContent = "No Wi-Fi networks found.";
-      return;
-    }
-
-    this.networkListMessage.textContent = "";
-
-    networks.forEach((network, index) => {
-      const isConnectedNetwork = this.isConnectedNetwork(network);
-      const networkItem = document.createElement("li");
-      networkItem.className = "networkListItem";
-
-      const networkButton = document.createElement("button");
-      networkButton.className = `networkListButton ${
-        isConnectedNetwork ? "connected" : ""
-      }`;
-      networkButton.type = "button";
-      networkButton.dataset.networkIndex = index;
-      networkButton.disabled = isConnectedNetwork;
-
-      const networkName = document.createElement("span");
-      networkName.className = "networkName";
-      networkName.textContent = network.ssid;
-
-      const networkIcons = document.createElement("span");
-      networkIcons.className = "networkIcons";
-
-      if (isConnectedNetwork) {
-        const connectedLabel = document.createElement("span");
-        connectedLabel.className = "networkConnectedLabel";
-        connectedLabel.textContent = "Connected";
-        networkIcons.appendChild(connectedLabel);
-      }
-
-      const lockIcon = document.createElement("span");
-      lockIcon.className = `networkIcon networkLockIcon ${
-        network.secure ? "secure" : "open"
-      }`;
-      lockIcon.title = network.secure ? "Secured network" : "Open network";
-
-      const signalIcon = document.createElement("span");
-      signalIcon.className = "networkIcon networkSignalIcon";
-      signalIcon.title = this.getSignalLabel(network.rssi);
-      signalIcon.appendChild(
-        createWifiSignalIcon(this.getSignalLevel(network.rssi)),
-      );
-
-      networkIcons.append(lockIcon, signalIcon);
-      networkButton.append(networkName, networkIcons);
-      networkItem.appendChild(networkButton);
-      this.networkList.appendChild(networkItem);
+    this.networkListView.render(networks, {
+      connectedWifiSsid: this.connectedWifiSsid,
     });
-  }
-
-  buildNetworkListSignature(networks) {
-    return networks
-      .map((network) => {
-        const security = network.secure ? "secure" : "open";
-        const signalLevel = this.getSignalLevel(network.rssi);
-        const connection = this.isConnectedNetwork(network)
-          ? "connected"
-          : "available";
-        return `${network.ssid}|${security}|${signalLevel}|${connection}`;
-      })
-      .join("\n");
   }
 
   updateNetworkSpinner() {
@@ -563,8 +474,9 @@ export class BleProvisioner {
         return;
       }
 
-      this.networkListMessage.textContent =
-        "Wi-Fi scan timed out. Try scanning again.";
+      this.networkListView.showMessage(
+        "Wi-Fi scan timed out. Try scanning again.",
+      );
       this.scanNetworksButton.disabled = false;
       this.scanNetworksButton.textContent = "Scan Networks";
       this.pendingScanNetworks = [];
@@ -582,10 +494,11 @@ export class BleProvisioner {
   }
 
   selectNetwork(network) {
-    if (this.isConnectedNetwork(network)) {
+    if (this.isConnectedSsid(network.ssid)) {
       this.closeWifiDialog();
-      this.networkListMessage.textContent =
-        `${network.ssid} is already connected.`;
+      this.networkListView.showMessage(
+        `${network.ssid} is already connected.`,
+      );
       return;
     }
 
@@ -684,38 +597,6 @@ export class BleProvisioner {
       : this.wifiSecurity.value !== "none";
   }
 
-  getSignalLevel(rssi) {
-    if (rssi >= -50) {
-      return 4;
-    }
-
-    if (rssi >= -67) {
-      return 3;
-    }
-
-    if (rssi >= -75) {
-      return 2;
-    }
-
-    return 1;
-  }
-
-  getSignalLabel(rssi) {
-    if (rssi >= -50) {
-      return "Strong signal";
-    }
-
-    if (rssi >= -67) {
-      return "Good signal";
-    }
-
-    if (rssi >= -75) {
-      return "Weak signal";
-    }
-
-    return "Poor signal";
-  }
-
   setConnectedWifiSsid(wifiSsid) {
     const previousWifiSsid = this.connectedWifiSsid;
     this.connectedWifiSsid = wifiSsid || "";
@@ -739,10 +620,6 @@ export class BleProvisioner {
     }
 
     this.renderNetworkList(this.scannedNetworks);
-  }
-
-  isConnectedNetwork(network) {
-    return this.isConnectedSsid(network.ssid);
   }
 
   isConnectedSsid(ssid) {
@@ -777,10 +654,9 @@ export class BleProvisioner {
     this.switchDeviceButton.disabled = true;
     this.forgetWifiButton.hidden = true;
     this.scanNetworksButton.textContent = "Scan Networks";
-    this.networkList.replaceChildren();
+    this.networkListView.clear();
     this.scannedNetworks = [];
     this.pendingScanNetworks = [];
-    this.networkListSignature = "";
 
     this.onDeviceDisconnected?.();
   }
@@ -948,10 +824,9 @@ export class BleProvisioner {
     this.switchDeviceButton.disabled = true;
     this.forgetWifiButton.hidden = true;
     this.scanNetworksButton.textContent = "Scan Networks";
-    this.networkList.replaceChildren();
+    this.networkListView.clear();
     this.scannedNetworks = [];
     this.pendingScanNetworks = [];
-    this.networkListSignature = "";
   }
 
   async releaseSetupSession() {
