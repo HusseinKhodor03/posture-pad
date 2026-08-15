@@ -8,7 +8,7 @@ import {
   WIFI_PASSWORD_UUID,
   WIFI_SCAN_RESULTS_UUID,
   WIFI_SSID_UUID,
-} from "../../config/constants.js";
+} from "../config/constants.js";
 
 const CHARACTERISTIC_UUIDS = {
   deviceId: DEVICE_ID_UUID,
