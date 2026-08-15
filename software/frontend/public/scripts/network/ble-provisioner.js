@@ -3,6 +3,7 @@ import {
   WIFI_FORGET_TIMEOUT_MS,
   WIFI_SCAN_TIMEOUT_MS,
 } from "../config/constants.js";
+import { ProvisioningControlsView } from "../ui/provisioning-controls-view.js";
 import { WifiCredentialsDialogView } from "../ui/wifi-credentials-dialog-view.js";
 import { WifiNetworkListView } from "../ui/wifi-network-list-view.js";
 import { BleTransport } from "./ble/ble-transport.js";
@@ -45,6 +46,7 @@ export class BleProvisioner {
     this.scannedNetworks = [];
     this.pendingScanNetworks = [];
     this.connectedWifiSsid = "";
+    this.currentWifiStatus = "";
     this.pendingWifiSsid = "";
     this.wifiConnectionInterrupted = false;
     this.isScanningWifi = false;
@@ -53,12 +55,24 @@ export class BleProvisioner {
   }
 
   init() {
-    this.connectBleButton = document.getElementById("connectBleButton");
-    this.bleDeviceName = document.getElementById("bleDeviceName");
-    this.bleMessage = document.getElementById("bleMessage");
-    this.bleDeviceDetails = document.getElementById("bleDeviceDetails");
-    this.bleDeviceId = document.getElementById("bleDeviceId");
-    this.bleDeviceStatus = document.getElementById("bleDeviceStatus");
+    this.controlsView = new ProvisioningControlsView();
+    this.controlsView.bind({
+      onConnectDevice: () => {
+        this.connectDevice();
+      },
+      onScanNetworks: () => {
+        this.scanWifiNetworks();
+      },
+      onOtherNetwork: () => {
+        this.openManualNetworkDialog();
+      },
+      onForgetWifi: () => {
+        this.forgetWifiNetwork();
+      },
+      onSwitchDevice: () => {
+        this.switchDevice();
+      },
+    });
     this.wifiDialogView = new WifiCredentialsDialogView({
       onSubmit: (credentials) => {
         this.sendWifiCredentials(credentials);
@@ -67,37 +81,12 @@ export class BleProvisioner {
         this.closeWifiDialog();
       },
     });
-    this.scanNetworksButton = document.getElementById("scanNetworksButton");
-    this.otherNetworkButton = document.getElementById("otherNetworkButton");
-    this.forgetWifiButton = document.getElementById("forgetWifiButton");
-    this.switchDeviceButton = document.getElementById("switchDeviceButton");
-    this.networkSpinner = document.getElementById("networkSpinner");
     this.networkListView = new WifiNetworkListView({
       onNetworkSelected: (network) => {
         if (!this.isConnectingWifi) {
           this.selectNetwork(network);
         }
       },
-    });
-
-    this.connectBleButton.addEventListener("click", () => {
-      this.connectDevice();
-    });
-
-    this.scanNetworksButton.addEventListener("click", () => {
-      this.scanWifiNetworks();
-    });
-
-    this.otherNetworkButton.addEventListener("click", () => {
-      this.openManualNetworkDialog();
-    });
-
-    this.forgetWifiButton.addEventListener("click", () => {
-      this.forgetWifiNetwork();
-    });
-
-    this.switchDeviceButton.addEventListener("click", () => {
-      this.switchDevice();
     });
 
     window.addEventListener("pagehide", () => {
@@ -107,15 +96,11 @@ export class BleProvisioner {
 
   async connectDevice() {
     if (!this.bleTransport.isSupported()) {
-      this.bleMessage.textContent =
-        "This browser does not support Web Bluetooth. Try Chrome or Edge.";
+      this.controlsView.showBluetoothUnsupported();
       return;
     }
 
-    this.connectBleButton.disabled = true;
-    this.bleMessage.classList.remove("error");
-    this.bleMessage.textContent =
-      "Choose your Posture Pad from the browser prompt.";
+    this.controlsView.showChoosingDevice();
 
     try {
       const device = await this.requestBluetoothDevice();
@@ -124,16 +109,12 @@ export class BleProvisioner {
       console.error("Bluetooth connection failed:", error);
       await this.releaseSetupSession();
       this.setupSession.clearLocal();
-      this.bleMessage.textContent =
-        "Make sure your device is powered on and nearby.";
-      this.connectBleButton.disabled = false;
+      this.controlsView.showConnectionFailed();
     }
   }
 
   async switchDevice() {
-    this.disableSetupButtonsForSwitch();
-    this.bleMessage.textContent =
-      "Disconnecting current Posture Pad...";
+    this.controlsView.showSwitchingDevice();
 
     try {
       await this.releaseSetupSession();
@@ -156,13 +137,6 @@ export class BleProvisioner {
       `${window.location.pathname}#configuration`,
     );
     window.location.reload();
-  }
-
-  disableSetupButtonsForSwitch() {
-    this.scanNetworksButton.disabled = true;
-    this.otherNetworkButton.disabled = true;
-    this.forgetWifiButton.disabled = true;
-    this.switchDeviceButton.disabled = true;
   }
 
   async requestBluetoothDevice() {
@@ -202,14 +176,13 @@ export class BleProvisioner {
 
     this.onDeviceConnected(deviceId, pairingToken);
 
-    this.bleDeviceName.textContent = this.bleTransport.getDeviceName();
-    this.bleDeviceId.textContent = deviceId;
-    this.bleDeviceDetails.hidden = false;
+    this.controlsView.showDeviceReady({
+      name: this.bleTransport.getDeviceName(),
+      deviceId,
+      hasKnownWifiNetwork: Boolean(this.connectedWifiSsid),
+    });
     this.closeWifiDialog();
-    this.bleMessage.classList.remove("error");
-    this.bleMessage.textContent = "Your Posture Pad is ready for Wi-Fi setup.";
     this.updateWifiStatus(statusValue);
-    this.connectBleButton.textContent = "Connected";
     this.scanWifiNetworks();
   }
 
@@ -222,13 +195,14 @@ export class BleProvisioner {
     const validation = validateWifiCredentials(ssid, password);
 
     if (!validation.isValid && validation.reason === "emptySsid") {
-      this.bleMessage.textContent = "Enter a Wi-Fi network name.";
+      this.controlsView.showMessage("Enter a Wi-Fi network name.");
       return;
     }
 
     if (!validation.isValid && validation.reason === "tooLong") {
-      this.bleMessage.textContent =
-        "The network name or password is too long.";
+      this.controlsView.showMessage(
+        "The network name or password is too long.",
+      );
       return;
     }
 
@@ -250,9 +224,10 @@ export class BleProvisioner {
         buildConnectCommand(this.setupSession.getSessionId()),
       );
 
-      if (this.bleDeviceStatus.textContent === "unconfigured") {
-        this.bleMessage.textContent =
-          "Wi-Fi credentials sent to the Posture Pad.";
+      if (this.currentWifiStatus === "unconfigured") {
+        this.controlsView.showMessage(
+          "Wi-Fi credentials sent to the Posture Pad.",
+        );
       }
     } catch (error) {
       this.showWifiConnectionError(
@@ -260,7 +235,7 @@ export class BleProvisioner {
         `Could not send Wi-Fi credentials for "${ssid}".`,
       );
       console.error("Could not send Wi-Fi credentials:", error);
-      this.bleMessage.textContent = "Could not send the Wi-Fi credentials.";
+      this.controlsView.showMessage("Could not send the Wi-Fi credentials.");
     }
   }
 
@@ -269,8 +244,6 @@ export class BleProvisioner {
       return;
     }
 
-    this.scanNetworksButton.disabled = true;
-    this.scanNetworksButton.textContent = "Scanning...";
     this.networkListView.showMessage("");
     this.networkListView.clear();
     this.scannedNetworks = [];
@@ -286,8 +259,6 @@ export class BleProvisioner {
     } catch (error) {
       console.error("Could not start Wi-Fi scan:", error);
       this.networkListView.showMessage("Could not scan Wi-Fi networks.");
-      this.scanNetworksButton.disabled = false;
-      this.scanNetworksButton.textContent = "Scan Networks";
       this.setWifiScanState(false);
     }
   }
@@ -303,8 +274,6 @@ export class BleProvisioner {
       this.networkListView.showMessage(
         "Could not read Wi-Fi scan results.",
       );
-      this.scanNetworksButton.disabled = false;
-      this.scanNetworksButton.textContent = "Scan Networks";
       this.setWifiScanState(false);
     }
   }
@@ -320,8 +289,7 @@ export class BleProvisioner {
 
     this.isForgettingWifi = true;
     this.startWifiForgetTimeout();
-    this.forgetWifiButton.disabled = true;
-    this.forgetWifiButton.textContent = "Forgetting...";
+    this.controlsView.showForgetState(true);
     this.closeWifiDialog();
 
     try {
@@ -332,22 +300,19 @@ export class BleProvisioner {
     } catch (error) {
       console.error("Could not forget Wi-Fi network:", error);
       this.stopWifiForgetTimeout();
-      this.bleMessage.textContent = "Could not forget the Wi-Fi network.";
+      this.controlsView.showMessage("Could not forget the Wi-Fi network.");
       this.isForgettingWifi = false;
-      this.forgetWifiButton.disabled = false;
-      this.forgetWifiButton.textContent = "Forget This Network...";
+      this.controlsView.showForgetState(false);
     }
   }
 
   updateWifiStatus(statusValue) {
     const { status, wifiSsid } = parseWifiStatus(statusValue);
 
-    this.bleDeviceStatus.textContent = status;
+    this.currentWifiStatus = status;
+    this.controlsView.showWifiStatus(status);
 
-    if (status === "connecting") {
-      this.bleMessage.textContent = "The Posture Pad is connecting to Wi-Fi...";
-    } else if (status === "connected") {
-      this.bleMessage.textContent = "The Posture Pad is connected to Wi-Fi.";
+    if (status === "connected") {
       if (wifiSsid) {
         this.setConnectedWifiSsid(wifiSsid);
         this.onWifiConnected?.(wifiSsid);
@@ -375,8 +340,6 @@ export class BleProvisioner {
     } catch (error) {
       console.error("Could not read Wi-Fi scan results:", error);
       this.networkListView.showMessage("Could not read Wi-Fi scan results.");
-      this.scanNetworksButton.disabled = false;
-      this.scanNetworksButton.textContent = "Scan Networks";
       this.setWifiScanState(false);
       return;
     }
@@ -390,8 +353,6 @@ export class BleProvisioner {
 
     if (scanResults.status !== "complete") {
       this.networkListView.showMessage("Could not scan Wi-Fi networks.");
-      this.scanNetworksButton.disabled = false;
-      this.scanNetworksButton.textContent = "Scan Networks";
       this.setWifiScanState(false);
       return;
     }
@@ -407,8 +368,6 @@ export class BleProvisioner {
       return;
     }
 
-    this.scanNetworksButton.disabled = false;
-    this.scanNetworksButton.textContent = "Scan Networks";
     this.setWifiScanState(false);
     this.renderNetworkList(this.pendingScanNetworks);
   }
@@ -418,10 +377,6 @@ export class BleProvisioner {
     this.networkListView.render(networks, {
       connectedWifiSsid: this.connectedWifiSsid,
     });
-  }
-
-  updateNetworkSpinner() {
-    this.networkSpinner.hidden = !this.isScanningWifi;
   }
 
   setWifiScanState(isScanningWifi) {
@@ -434,7 +389,7 @@ export class BleProvisioner {
       this.stopWifiScanTimeout();
     }
 
-    this.updateNetworkSpinner();
+    this.controlsView.showScanState(isScanningWifi);
     this.onWifiScanStateChanged?.(isScanningWifi);
   }
 
@@ -448,8 +403,6 @@ export class BleProvisioner {
       this.networkListView.showMessage(
         "Wi-Fi scan timed out. Try scanning again.",
       );
-      this.scanNetworksButton.disabled = false;
-      this.scanNetworksButton.textContent = "Scan Networks";
       this.pendingScanNetworks = [];
       this.setWifiScanState(false);
     }, WIFI_SCAN_TIMEOUT_MS);
@@ -500,6 +453,7 @@ export class BleProvisioner {
   setConnectedWifiSsid(wifiSsid) {
     const previousWifiSsid = this.connectedWifiSsid;
     this.connectedWifiSsid = wifiSsid || "";
+    this.controlsView?.setKnownWifiNetwork(Boolean(this.connectedWifiSsid));
 
     if (this.pendingWifiSsid && !this.connectedWifiSsid) {
       this.wifiConnectionInterrupted = true;
@@ -536,23 +490,12 @@ export class BleProvisioner {
     this.setupSession.clearLocal();
     this.bleTransport.clear();
     this.pendingWifiSsid = "";
+    this.currentWifiStatus = "";
     this.wifiConnectionInterrupted = false;
     this.isConnectingWifi = false;
     this.isForgettingWifi = false;
-    this.bleDeviceName.textContent = "Connect Device";
-    this.bleMessage.classList.remove("error");
-    this.bleMessage.textContent =
-      "Make sure your device is powered on and nearby.";
-    this.bleDeviceDetails.hidden = true;
     this.closeWifiDialog({ force: true });
-    this.connectBleButton.disabled = false;
-    this.connectBleButton.textContent = "Connect Device";
-    this.scanNetworksButton.disabled = true;
-    this.otherNetworkButton.disabled = true;
-    this.switchDeviceButton.hidden = true;
-    this.switchDeviceButton.disabled = true;
-    this.forgetWifiButton.hidden = true;
-    this.scanNetworksButton.textContent = "Scan Networks";
+    this.controlsView.showDisconnected();
     this.networkListView.clear();
     this.scannedNetworks = [];
     this.pendingScanNetworks = [];
@@ -591,10 +534,10 @@ export class BleProvisioner {
   finishForgetWifiNetwork() {
     this.isForgettingWifi = false;
     this.stopWifiForgetTimeout();
-    this.forgetWifiButton.disabled = false;
-    this.forgetWifiButton.textContent = "Forget This Network...";
-    this.bleMessage.textContent =
-      "The saved Wi-Fi network was removed from this Posture Pad.";
+    this.controlsView.showForgetState(false);
+    this.controlsView.showMessage(
+      "The saved Wi-Fi network was removed from this Posture Pad.",
+    );
     this.onWifiForgotten?.();
   }
 
@@ -607,10 +550,10 @@ export class BleProvisioner {
       }
 
       this.isForgettingWifi = false;
-      this.forgetWifiButton.disabled = false;
-      this.forgetWifiButton.textContent = "Forget This Network...";
-      this.bleMessage.textContent =
-        "Could not confirm that the Wi-Fi network was forgotten.";
+      this.controlsView.showForgetState(false);
+      this.controlsView.showMessage(
+        "Could not confirm that the Wi-Fi network was forgotten.",
+      );
     }, WIFI_FORGET_TIMEOUT_MS);
   }
 
@@ -653,20 +596,8 @@ export class BleProvisioner {
 
   showBusyDeviceMessage(deviceId) {
     this.setWifiScanState(false);
-    this.bleDeviceName.textContent = "Connect Device";
-    this.bleMessage.classList.add("error");
-    this.bleMessage.textContent =
-      `PosturePad-${deviceId.slice(-6)} is already being configured in another browser.`;
-    this.bleDeviceDetails.hidden = true;
     this.closeWifiDialog({ force: true });
-    this.connectBleButton.disabled = false;
-    this.connectBleButton.textContent = "Connect Device";
-    this.scanNetworksButton.disabled = true;
-    this.otherNetworkButton.disabled = true;
-    this.switchDeviceButton.hidden = true;
-    this.switchDeviceButton.disabled = true;
-    this.forgetWifiButton.hidden = true;
-    this.scanNetworksButton.textContent = "Scan Networks";
+    this.controlsView.showBusyDevice(deviceId);
     this.networkListView.clear();
     this.scannedNetworks = [];
     this.pendingScanNetworks = [];

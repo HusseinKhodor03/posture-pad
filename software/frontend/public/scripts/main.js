@@ -76,8 +76,6 @@ function main() {
     deviceLabel: selectedDeviceLabel,
     deviceId: selectedDeviceId,
     hasSelectedDevice: Boolean(selectedDeviceId),
-    isOnline: selectedDeviceStatus === "online",
-    isScanningWifi,
     isSetupConnected,
     wifiSsid: selectedDeviceWifiSsid,
   });
@@ -105,8 +103,6 @@ function main() {
       deviceLabel: selectedDeviceLabel,
       deviceId: selectedDeviceId,
       hasSelectedDevice: Boolean(selectedDeviceId),
-      isOnline: selectedDeviceStatus === "online",
-      isScanningWifi,
       isSetupConnected,
       wifiSsid: selectedDeviceWifiSsid,
     });
@@ -135,8 +131,6 @@ function main() {
         deviceLabel: selectedDeviceLabel,
         deviceId: selectedDeviceId,
         hasSelectedDevice: Boolean(selectedDeviceId),
-        isOnline: selectedDeviceStatus === "online",
-        isScanningWifi,
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
@@ -162,8 +156,6 @@ function main() {
         deviceLabel: selectedDeviceLabel,
         deviceId: selectedDeviceId,
         hasSelectedDevice: Boolean(selectedDeviceId),
-        isOnline: selectedDeviceStatus === "online",
-        isScanningWifi,
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
@@ -175,8 +167,6 @@ function main() {
         deviceLabel: selectedDeviceLabel,
         deviceId: selectedDeviceId,
         hasSelectedDevice: Boolean(selectedDeviceId),
-        isOnline: selectedDeviceStatus === "online",
-        isScanningWifi,
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
@@ -195,8 +185,6 @@ function main() {
         deviceLabel: selectedDeviceLabel,
         deviceId: selectedDeviceId,
         hasSelectedDevice: Boolean(selectedDeviceId),
-        isOnline: false,
-        isScanningWifi,
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
@@ -213,8 +201,6 @@ function main() {
         deviceLabel: selectedDeviceLabel,
         deviceId: selectedDeviceId,
         hasSelectedDevice: Boolean(selectedDeviceId),
-        isOnline: selectedDeviceStatus === "online",
-        isScanningWifi,
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
