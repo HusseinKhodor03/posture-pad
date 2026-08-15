@@ -15,6 +15,8 @@ export const SETUP_SESSION_UUID = "0ad025b5-07ca-49a8-b3f7-03865f5f924f";
 export const WIFI_SCAN_TIMEOUT_MS = 20_000;
 export const WIFI_CONNECTION_TIMEOUT_MS = 20_000;
 export const WIFI_FORGET_TIMEOUT_MS = 10_000;
+export const WIFI_SSID_MAX_BYTES = 32;
+export const WIFI_PASSWORD_MAX_BYTES = 64;
 
 export const LEFT_FOOT_SVG = "assets/left_foot.svg";
 export const RIGHT_FOOT_SVG = "assets/right_foot.svg";
