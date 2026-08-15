@@ -18,7 +18,7 @@ import {
 } from "./ui/dashboard-view.js";
 import { updateConfigView } from "./ui/config-view.js";
 import { HeatmapRenderer } from "./ui/heatmap-renderer.js";
-import { BleProvisioner } from "./network/ble-provisioner.js";
+import { DeviceSetupController } from "./device/device-setup-controller.js";
 import { DashboardWebSocket } from "./network/dashboard-web-socket.js";
 
 function main() {
@@ -80,7 +80,7 @@ function main() {
     wifiSsid: selectedDeviceWifiSsid,
   });
 
-  let bleProvisioner = null;
+  let deviceSetupController = null;
 
   const dashboardWebSocket = new DashboardWebSocket((dashboardState) => {
     selectedDeviceStatus = dashboardState.status;
@@ -106,12 +106,12 @@ function main() {
       isSetupConnected,
       wifiSsid: selectedDeviceWifiSsid,
     });
-    bleProvisioner?.setConnectedWifiSsid(selectedDeviceWifiSsid);
+    deviceSetupController?.syncObservedWifiSsid(selectedDeviceWifiSsid);
   });
   dashboardWebSocket.subscribeToDevice(selectedDeviceId);
   dashboardWebSocket.connect();
 
-  bleProvisioner = new BleProvisioner({
+  deviceSetupController = new DeviceSetupController({
     onDeviceConnected: (deviceId, authToken) => {
       const isSameDevice = selectedDeviceId === deviceId;
       selectedDeviceId = deviceId;
@@ -134,7 +134,7 @@ function main() {
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
-      bleProvisioner?.setConnectedWifiSsid(selectedDeviceWifiSsid);
+      deviceSetupController?.syncObservedWifiSsid(selectedDeviceWifiSsid);
     },
     onDeviceDisconnected: () => {
       selectedDeviceId = null;
@@ -159,7 +159,7 @@ function main() {
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
-      bleProvisioner?.setConnectedWifiSsid(selectedDeviceWifiSsid);
+      deviceSetupController?.syncObservedWifiSsid(selectedDeviceWifiSsid);
     },
     onWifiConnected: (wifiSsid) => {
       selectedDeviceWifiSsid = wifiSsid;
@@ -188,7 +188,7 @@ function main() {
         isSetupConnected,
         wifiSsid: selectedDeviceWifiSsid,
       });
-      bleProvisioner?.setConnectedWifiSsid(selectedDeviceWifiSsid);
+      deviceSetupController?.syncObservedWifiSsid(selectedDeviceWifiSsid);
     },
     onWifiScanStateChanged: (scanState) => {
       isScanningWifi = scanState;
@@ -206,8 +206,8 @@ function main() {
       });
     },
   });
-  bleProvisioner.init();
-  bleProvisioner.setConnectedWifiSsid(selectedDeviceWifiSsid);
+  deviceSetupController.init();
+  deviceSetupController.syncObservedWifiSsid(selectedDeviceWifiSsid);
 
   const drawHeatmaps = () => {
     leftHeatmap.draw();
