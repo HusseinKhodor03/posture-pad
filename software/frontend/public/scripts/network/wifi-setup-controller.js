@@ -2,7 +2,7 @@ import {
   WIFI_CONNECTION_TIMEOUT_MS,
   WIFI_FORGET_TIMEOUT_MS,
   WIFI_SCAN_TIMEOUT_MS,
-} from "../../config/constants.js";
+} from "../config/constants.js";
 import {
   buildConnectCommand,
   buildForgetCommand,
@@ -11,7 +11,7 @@ import {
   parseScanResults,
   parseWifiStatus,
   validateWifiCredentials,
-} from "../ble/ble-provisioning-protocol.js";
+} from "./ble-provisioning-protocol.js";
 
 export class WifiSetupController {
   constructor({

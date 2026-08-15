@@ -1,6 +1,6 @@
-import { BleTransport } from "../network/ble/ble-transport.js";
-import { SetupSession } from "../network/ble/setup-session.js";
-import { WifiSetupController } from "../network/wifi/wifi-setup-controller.js";
+import { BleTransport } from "../network/ble-transport.js";
+import { SetupSession } from "../network/setup-session.js";
+import { WifiSetupController } from "../network/wifi-setup-controller.js";
 import { ProvisioningControlsView } from "../ui/provisioning-controls-view.js";
 import { WifiCredentialsDialogView } from "../ui/wifi-credentials-dialog-view.js";
 import { WifiNetworkListView } from "../ui/wifi-network-list-view.js";
