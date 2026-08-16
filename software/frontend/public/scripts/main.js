@@ -1,11 +1,4 @@
-import {
-  LEFT_FOOT_SVG,
-  LEFT_SENSOR_CONFIG,
-  PRESSURE_GRADIENT,
-  RIGHT_FOOT_SVG,
-  RIGHT_SENSOR_CONFIG,
-  TAB_HASHES,
-} from "./config/constants.js";
+import { TAB_HASHES } from "./config/constants.js";
 import {
   clearSelectedDevice,
   formatDeviceLabel,
@@ -17,7 +10,7 @@ import {
   updateDashboardView,
 } from "./ui/dashboard-view.js";
 import { updateConfigView } from "./ui/config-view.js";
-import { HeatmapRenderer } from "./ui/heatmap-renderer.js";
+import { FootHeatmaps } from "./ui/foot-heatmaps.js";
 import { DeviceSetupController } from "./device/device-setup-controller.js";
 import { DashboardWebSocket } from "./network/dashboard-web-socket.js";
 
@@ -32,34 +25,21 @@ function main() {
   let selectedDeviceWifiSsid = "";
   let isSetupConnected = false;
   let isScanningWifi = false;
-  let heatmapsInitialized = false;
 
-  const leftHeatmap = new HeatmapRenderer({
-    containerId: "leftFootContainer",
-    svgFile: LEFT_FOOT_SVG,
-    sensorConfig: LEFT_SENSOR_CONFIG,
-    pressureGradient: PRESSURE_GRADIENT,
-  });
-  const rightHeatmap = new HeatmapRenderer({
-    containerId: "rightFootContainer",
-    svgFile: RIGHT_FOOT_SVG,
-    sensorConfig: RIGHT_SENSOR_CONFIG,
-    pressureGradient: PRESSURE_GRADIENT,
-  });
+  const footHeatmaps = new FootHeatmaps();
 
   const initialTabHash = initTabs({
     onTabChange: (activeTabHash) => {
-      if (activeTabHash !== TAB_HASHES.dashboard || heatmapsInitialized) {
+      if (activeTabHash !== TAB_HASHES.dashboard) {
         return;
       }
 
-      Promise.all([leftHeatmap.init(), rightHeatmap.init()]).finally(() => {
+      footHeatmaps.init().finally(() => {
         document
           .getElementById("mainContainer")
           .classList.remove("loadingHeatmaps");
         document.body.classList.remove("appBooting");
       });
-      heatmapsInitialized = true;
     },
   });
 
@@ -87,11 +67,9 @@ function main() {
 
     if (dashboardState.data) {
       selectedDeviceWifiSsid = dashboardState.data.wifi_ssid || "";
-      leftHeatmap.updateSensorData(dashboardState.data.left_foot.sensors);
-      rightHeatmap.updateSensorData(dashboardState.data.right_foot.sensors);
+      footHeatmaps.updateFromDashboardData(dashboardState.data);
     } else if (dashboardState.status === "offline" && !isScanningWifi) {
-      leftHeatmap.resetSensorData();
-      rightHeatmap.resetSensorData();
+      footHeatmaps.reset();
     }
 
     updateDashboardView({
@@ -145,8 +123,7 @@ function main() {
       clearSelectedDevice();
       dashboardWebSocket.clearAuthToken();
       dashboardWebSocket.unsubscribe();
-      leftHeatmap.resetSensorData();
-      rightHeatmap.resetSensorData();
+      footHeatmaps.reset();
       updateDashboardView({
         status: selectedDeviceStatus,
         deviceLabel: selectedDeviceLabel,
@@ -174,8 +151,7 @@ function main() {
     onWifiForgotten: () => {
       selectedDeviceStatus = "offline";
       selectedDeviceWifiSsid = "";
-      leftHeatmap.resetSensorData();
-      rightHeatmap.resetSensorData();
+      footHeatmaps.reset();
       updateDashboardView({
         status: selectedDeviceStatus,
         deviceLabel: selectedDeviceLabel,
@@ -209,13 +185,7 @@ function main() {
   deviceSetupController.init();
   deviceSetupController.syncObservedWifiSsid(selectedDeviceWifiSsid);
 
-  const drawHeatmaps = () => {
-    leftHeatmap.draw();
-    rightHeatmap.draw();
-    requestAnimationFrame(drawHeatmaps);
-  };
-
-  drawHeatmaps();
+  footHeatmaps.startDrawLoop();
 }
 
 main();
