@@ -10,6 +10,10 @@ import {
   updateDashboardView,
 } from "./ui/dashboard-view.js";
 import { updateConfigView } from "./ui/config-view.js";
+import {
+  finishBooting,
+  finishHeatmapLoading,
+} from "./ui/app-shell-view.js";
 import { FootHeatmaps } from "./ui/foot-heatmaps.js";
 import { DeviceSetupController } from "./device/device-setup-controller.js";
 import { DashboardWebSocket } from "./network/dashboard-web-socket.js";
@@ -35,16 +39,14 @@ function main() {
       }
 
       footHeatmaps.init().finally(() => {
-        document
-          .getElementById("mainContainer")
-          .classList.remove("loadingHeatmaps");
-        document.body.classList.remove("appBooting");
+        finishHeatmapLoading();
+        finishBooting();
       });
     },
   });
 
   if (initialTabHash !== TAB_HASHES.dashboard) {
-    document.body.classList.remove("appBooting");
+    finishBooting();
   }
 
   updateDashboardView({
