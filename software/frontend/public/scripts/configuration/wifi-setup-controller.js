@@ -1,9 +1,4 @@
 import {
-  WIFI_CONNECTION_TIMEOUT_MS,
-  WIFI_FORGET_TIMEOUT_MS,
-  WIFI_SCAN_TIMEOUT_MS,
-} from "../config/constants.js";
-import {
   buildConnectCommand,
   buildForgetCommand,
   buildScanCommand,
@@ -12,6 +7,10 @@ import {
   parseWifiStatus,
   validateWifiCredentials,
 } from "./ble-provisioning-protocol.js";
+
+const WIFI_SCAN_TIMEOUT_MS = 20_000;
+const WIFI_CONNECTION_TIMEOUT_MS = 20_000;
+const WIFI_FORGET_TIMEOUT_MS = 10_000;
 
 export class WifiSetupController {
   constructor({

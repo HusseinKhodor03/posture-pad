@@ -1,4 +1,7 @@
-import { TAB_HASHES } from "../config/constants.js";
+const TAB_HASHES = {
+  dashboard: "#dashboard",
+  configuration: "#configuration",
+};
 
 function getActiveTabHash() {
   const validHashes = Object.values(TAB_HASHES);

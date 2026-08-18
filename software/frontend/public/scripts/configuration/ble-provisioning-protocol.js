@@ -1,7 +1,5 @@
-import {
-  WIFI_PASSWORD_MAX_BYTES,
-  WIFI_SSID_MAX_BYTES,
-} from "../config/constants.js";
+const WIFI_SSID_MAX_BYTES = 32;
+const WIFI_PASSWORD_MAX_BYTES = 64;
 
 export function buildClaimCommand(sessionId) {
   return `claim:${sessionId}`;
