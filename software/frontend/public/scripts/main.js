@@ -1,9 +1,9 @@
 import { TAB_HASHES } from "./config/constants.js";
-import { initTabs } from "./ui/tab-controller.js";
+import { initTabs } from "./app/tab-controller.js";
 import {
   finishBooting,
   finishHeatmapLoading,
-} from "./ui/app-shell-view.js";
+} from "./app/app-loading-view.js";
 import { ConfigurationController } from "./configuration/configuration-controller.js";
 import { DashboardController } from "./dashboard/dashboard-controller.js";
 

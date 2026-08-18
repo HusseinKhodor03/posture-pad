@@ -4,7 +4,7 @@ import {
   formatDeviceLabel,
   loadSelectedDeviceId,
   selectDevice,
-} from "../device/device-selection.js";
+} from "../app/selected-device-store.js";
 import { updateConfigView } from "../ui/config-view.js";
 
 export class ConfigurationController {
