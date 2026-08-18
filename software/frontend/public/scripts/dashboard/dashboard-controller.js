@@ -1,6 +1,6 @@
-import { DashboardWebSocket } from "../network/dashboard-web-socket.js";
-import { FootHeatmaps } from "../ui/foot-heatmaps.js";
-import { updateDashboardView } from "../ui/dashboard-view.js";
+import { DashboardWebSocket } from "./dashboard-web-socket.js";
+import { FootHeatmaps } from "./foot-heatmaps.js";
+import { updateDashboardStatusView } from "./dashboard-status-view.js";
 
 export class DashboardController {
   constructor({ deviceLabel, onObservedWifiSsidChanged } = {}) {
@@ -102,7 +102,7 @@ export class DashboardController {
   }
 
   render(dashboardState = {}) {
-    updateDashboardView({
+    updateDashboardStatusView({
       ...dashboardState,
       status: dashboardState.status || this.status,
       deviceLabel: this.deviceLabel,

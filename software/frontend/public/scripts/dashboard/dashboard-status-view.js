@@ -1,4 +1,4 @@
-export function updateDashboardView({
+export function updateDashboardStatusView({
   status,
   deviceLabel,
   isPaused = false,
