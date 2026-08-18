@@ -1,4 +1,4 @@
-export function updateConfigView({
+export function updateConfigStatusView({
   deviceLabel,
   deviceId,
   hasSelectedDevice,

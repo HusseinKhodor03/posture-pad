@@ -1,11 +1,11 @@
-import { DeviceSetupController } from "../device/device-setup-controller.js";
+import { DeviceSetupController } from "./device-setup-controller.js";
 import {
   clearSelectedDevice,
   formatDeviceLabel,
   loadSelectedDeviceId,
   selectDevice,
 } from "../app/selected-device-store.js";
-import { updateConfigView } from "../ui/config-view.js";
+import { updateConfigStatusView } from "./config-status-view.js";
 
 export class ConfigurationController {
   constructor({
@@ -125,7 +125,7 @@ export class ConfigurationController {
   }
 
   renderStatus() {
-    updateConfigView({
+    updateConfigStatusView({
       deviceLabel: this.selectedDeviceLabel,
       deviceId: this.selectedDeviceId,
       hasSelectedDevice: Boolean(this.selectedDeviceId),
