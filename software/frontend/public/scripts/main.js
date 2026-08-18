@@ -1,4 +1,3 @@
-import { TAB_HASHES } from "./config/constants.js";
 import { initTabs } from "./app/tab-controller.js";
 import {
   finishBooting,
@@ -45,22 +44,17 @@ function main() {
     },
   });
 
-  const initialTabHash = initTabs({
-    onTabChange: (activeTabHash) => {
-      if (activeTabHash !== TAB_HASHES.dashboard) {
-        return;
-      }
-
+  initTabs({
+    onDashboardTabActive: () => {
       dashboardController.initHeatmaps().finally(() => {
         finishHeatmapLoading();
         finishBooting();
       });
     },
+    onInitialNonDashboardTab: () => {
+      finishBooting();
+    },
   });
-
-  if (initialTabHash !== TAB_HASHES.dashboard) {
-    finishBooting();
-  }
 
   dashboardController.connect();
   configurationController.init();

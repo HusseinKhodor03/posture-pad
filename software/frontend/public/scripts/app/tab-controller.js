@@ -22,7 +22,10 @@ function showActiveTab(tabs) {
   return activeTabHash;
 }
 
-export function initTabs({ onTabChange } = {}) {
+export function initTabs({
+  onDashboardTabActive,
+  onInitialNonDashboardTab,
+} = {}) {
   const tabs = [
     {
       button: document.getElementById("dashboardTab"),
@@ -44,10 +47,17 @@ export function initTabs({ onTabChange } = {}) {
 
   window.addEventListener("hashchange", () => {
     const activeTabHash = showActiveTab(tabs);
-    onTabChange?.(activeTabHash);
+
+    if (activeTabHash === TAB_HASHES.dashboard) {
+      onDashboardTabActive?.();
+    }
   });
 
   const activeTabHash = showActiveTab(tabs);
-  onTabChange?.(activeTabHash);
-  return activeTabHash;
+
+  if (activeTabHash === TAB_HASHES.dashboard) {
+    onDashboardTabActive?.();
+  } else {
+    onInitialNonDashboardTab?.();
+  }
 }
