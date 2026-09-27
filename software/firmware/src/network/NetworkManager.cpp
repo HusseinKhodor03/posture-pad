@@ -7,6 +7,8 @@ namespace
     const char *PREFERENCES_NAMESPACE = "posture-pad";
     const char *WIFI_SSID_KEY = "wifi_ssid";
     const char *WIFI_PASSWORD_KEY = "wifi_password";
+    constexpr unsigned long WIFI_RETRY_MS = 3000;
+    constexpr unsigned long TCP_RETRY_MS = 3000;
 }
 
 NetworkManager::NetworkManager(const char *host, int port) : host(host), port(port), lastWifiAttempt(0), lastTcpAttempt(0) {}
