@@ -1,5 +1,15 @@
 #include "MuxController.h"
 
+namespace
+{
+    constexpr int MUX_S0 = 14;
+    constexpr int MUX_S1 = 27;
+    constexpr int MUX_S2 = 26;
+    constexpr int MUX_S3 = 25;
+    constexpr int RIGHT_FOOT_MUX = 32;
+    constexpr int LEFT_FOOT_MUX = 33;
+}
+
 void MuxController::init()
 {
     pinMode(MUX_S0, OUTPUT);

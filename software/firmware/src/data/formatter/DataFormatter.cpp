@@ -2,6 +2,16 @@
 #include "../DataConfig.h"
 #include <math.h>
 
+namespace
+{
+    constexpr int VOLTAGE_DECIMALS = 3;
+    constexpr int NORMALIZED_DECIMALS = 3;
+    constexpr int SCORE_DECIMALS = 2;
+    constexpr int RATIO_DECIMALS = 2;
+    constexpr int PERCENTAGE_DECIMALS = 1;
+    constexpr int PRESSURE_DECIMALS = 2;
+}
+
 float DataFormatter::roundToDecimals(float value, int decimals)
 {
     float multiplier = powf(10.0f, (float)decimals);

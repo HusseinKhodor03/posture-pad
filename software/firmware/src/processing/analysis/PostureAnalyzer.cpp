@@ -1,6 +1,15 @@
 #include "PostureAnalyzer.h"
 #include <math.h>
 
+namespace
+{
+    constexpr float BALANCE_IMBALANCE_THRESHOLD = 15.0f;
+    constexpr float FORWARD_LEAN_THRESHOLD = 0.65f;
+    constexpr float BACKWARD_LEAN_THRESHOLD = 0.35f;
+    constexpr float PRONATION_THRESHOLD = 1.3f;
+    constexpr float SUPINATION_THRESHOLD = 0.7f;
+}
+
 void PostureAnalyzer::analyze(const PostureMetrics &metrics, PostureAnalysis &analysis)
 {
     if (metrics.stabilityScore <= 0)
