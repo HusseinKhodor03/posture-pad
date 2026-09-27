@@ -1,5 +1,5 @@
 #include "DataFormatter.h"
-#include "../DataConfig.h"
+#include "DataConfig.h"
 #include <math.h>
 
 namespace

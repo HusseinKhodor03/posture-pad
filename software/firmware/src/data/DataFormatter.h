@@ -1,8 +1,8 @@
 #ifndef DATA_FORMATTER_H
 #define DATA_FORMATTER_H
 
-#include "../models/RawDataTypes.h"
-#include "../models/FormattedDataTypes.h"
+#include "RawDataTypes.h"
+#include "FormattedDataTypes.h"
 
 class DataFormatter
 {

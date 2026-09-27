@@ -1,5 +1,5 @@
 #include "JsonSerializer.h"
-#include "../DataConfig.h"
+#include "DataConfig.h"
 
 String JsonSerializer::serialize(const String &deviceId, const String &pairingToken, const String &wifiSsid, const FormattedFootData &leftFoot, const FormattedFootData &rightFoot,
                                  const FormattedPostureMetrics &metrics, const PostureAnalysis &analysis)

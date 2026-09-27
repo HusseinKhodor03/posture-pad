@@ -2,14 +2,14 @@
 #define DEVICE_MANAGER_H
 
 #include <Arduino.h>
-#include "../data/models/RawDataTypes.h"
-#include "../data/models/FormattedDataTypes.h"
+#include "../data/RawDataTypes.h"
+#include "../data/FormattedDataTypes.h"
 #include "../sensors/SensorReader.h"
-#include "../processing/filtering/SignalProcessor.h"
-#include "../processing/metrics/MetricsCalculator.h"
-#include "../processing/analysis/PostureAnalyzer.h"
-#include "../data/formatter/DataFormatter.h"
-#include "../data/serialization/JsonSerializer.h"
+#include "../processing/SignalProcessor.h"
+#include "../processing/MetricsCalculator.h"
+#include "../processing/PostureAnalyzer.h"
+#include "../data/DataFormatter.h"
+#include "../data/JsonSerializer.h"
 #include "../network/BleProvisioner.h"
 #include "../network/NetworkManager.h"
 #include "../network/TcpClient.h"

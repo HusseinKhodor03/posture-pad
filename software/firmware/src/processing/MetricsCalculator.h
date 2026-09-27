@@ -1,7 +1,7 @@
 #ifndef METRICS_CALCULATOR_H
 #define METRICS_CALCULATOR_H
 
-#include "../../data/models/RawDataTypes.h"
+#include "../data/RawDataTypes.h"
 
 class MetricsCalculator
 {

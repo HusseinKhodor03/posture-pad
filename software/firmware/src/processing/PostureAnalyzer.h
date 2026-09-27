@@ -1,7 +1,7 @@
 #ifndef POSTURE_ANALYZER_H
 #define POSTURE_ANALYZER_H
 
-#include "../../data/models/RawDataTypes.h"
+#include "../data/RawDataTypes.h"
 
 class PostureAnalyzer
 {

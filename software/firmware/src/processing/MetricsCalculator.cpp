@@ -1,5 +1,5 @@
 #include "MetricsCalculator.h"
-#include "../../data/DataConfig.h"
+#include "../data/DataConfig.h"
 #include <math.h>
 
 namespace

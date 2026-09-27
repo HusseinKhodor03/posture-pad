@@ -2,8 +2,8 @@
 #define JSON_SERIALIZER_H
 
 #include <ArduinoJson.h>
-#include "../models/RawDataTypes.h"
-#include "../models/FormattedDataTypes.h"
+#include "RawDataTypes.h"
+#include "FormattedDataTypes.h"
 
 class JsonSerializer
 {
