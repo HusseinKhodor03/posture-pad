@@ -2,11 +2,12 @@
 #define DATA_TYPES_H
 
 #include <Arduino.h>
-#include "config/Constants.h"
 #include "data/DataConfig.h"
 
 struct SensorData
 {
+    static constexpr float INITIAL_VOLTAGE_MIN = 3.3f;
+
     int adcRaw;
     float adcFiltered;
     float voltage;
@@ -15,7 +16,7 @@ struct SensorData
     float normalized;
 
     SensorData() : adcRaw(0), adcFiltered(0.0f), voltage(0.0f),
-                   voltageMin(VREF), voltageMax(0.0f), normalized(0.0f) {}
+                   voltageMin(INITIAL_VOLTAGE_MIN), voltageMax(0.0f), normalized(0.0f) {}
 };
 
 struct FootData

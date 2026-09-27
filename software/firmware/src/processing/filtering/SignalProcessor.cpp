@@ -4,6 +4,7 @@
 namespace
 {
     constexpr int ADC_MAX = 4095;
+    constexpr float VREF = 3.3f;
     constexpr float EMA_ALPHA = 0.3f;
     constexpr float NORMALIZATION_DECAY_RATE = 0.0005f;
     constexpr float MIN_VOLTAGE_RANGE = 0.1f;

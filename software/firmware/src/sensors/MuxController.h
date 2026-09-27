@@ -2,7 +2,6 @@
 #define MUX_CONTROLLER_H
 
 #include <Arduino.h>
-#include "../config/Constants.h"
 
 class MuxController
 {

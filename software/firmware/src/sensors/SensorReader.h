@@ -1,7 +1,6 @@
 #ifndef SENSOR_READER_H
 #define SENSOR_READER_H
 
-#include "../config/Constants.h"
 #include "../data/models/RawDataTypes.h"
 #include "MuxController.h"
 

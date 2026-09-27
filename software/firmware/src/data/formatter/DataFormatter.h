@@ -1,7 +1,6 @@
 #ifndef DATA_FORMATTER_H
 #define DATA_FORMATTER_H
 
-#include "../../config/Constants.h"
 #include "../models/RawDataTypes.h"
 #include "../models/FormattedDataTypes.h"
 

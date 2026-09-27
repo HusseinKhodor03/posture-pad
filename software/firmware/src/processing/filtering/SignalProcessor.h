@@ -1,7 +1,6 @@
 #ifndef SIGNAL_PROCESSOR_H
 #define SIGNAL_PROCESSOR_H
 
-#include "../../config/Constants.h"
 #include "../../data/models/RawDataTypes.h"
 
 class SignalProcessor

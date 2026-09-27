@@ -2,7 +2,6 @@
 #define DEVICE_MANAGER_H
 
 #include <Arduino.h>
-#include "../config/Constants.h"
 #include "../data/models/RawDataTypes.h"
 #include "../data/models/FormattedDataTypes.h"
 #include "../sensors/SensorReader.h"

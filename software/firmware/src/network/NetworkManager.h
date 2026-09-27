@@ -3,7 +3,6 @@
 
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include "../config/Constants.h"
 
 class NetworkManager
 {
