@@ -1,4 +1,5 @@
 #include "JsonSerializer.h"
+#include "../DataConfig.h"
 
 String JsonSerializer::serialize(const String &deviceId, const String &pairingToken, const String &wifiSsid, const FormattedFootData &leftFoot, const FormattedFootData &rightFoot,
                                  const FormattedPostureMetrics &metrics, const PostureAnalysis &analysis)
@@ -11,14 +12,14 @@ String JsonSerializer::serialize(const String &deviceId, const String &pairingTo
 
     JsonObject left = doc["left_foot"].to<JsonObject>();
     JsonObject leftSensors = left["sensors"].to<JsonObject>();
-    addSensorData(leftSensors, leftFoot.sensors, NUM_SENSORS_PER_FOOT);
+    addSensorData(leftSensors, leftFoot.sensors, DataConfig::NUM_SENSORS_PER_FOOT);
 
     JsonObject leftMetrics = left["metrics"].to<JsonObject>();
     addFootMetrics(leftMetrics, leftFoot);
 
     JsonObject right = doc["right_foot"].to<JsonObject>();
     JsonObject rightSensors = right["sensors"].to<JsonObject>();
-    addSensorData(rightSensors, rightFoot.sensors, NUM_SENSORS_PER_FOOT);
+    addSensorData(rightSensors, rightFoot.sensors, DataConfig::NUM_SENSORS_PER_FOOT);
 
     JsonObject rightMetrics = right["metrics"].to<JsonObject>();
     addFootMetrics(rightMetrics, rightFoot);

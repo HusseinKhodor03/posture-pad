@@ -1,4 +1,5 @@
 #include "MetricsCalculator.h"
+#include "../../data/DataConfig.h"
 #include <math.h>
 
 void MetricsCalculator::calculateFootMetrics(FootData &foot, bool isRightFoot)
@@ -14,7 +15,7 @@ void MetricsCalculator::calculateFootMetrics(FootData &foot, bool isRightFoot)
     float momentX = 0.0f;
     float momentY = 0.0f;
 
-    for (int i = 0; i < NUM_SENSORS_PER_FOOT; i++)
+    for (int i = 0; i < DataConfig::NUM_SENSORS_PER_FOOT; i++)
     {
         float pressure = foot.sensors[i].normalized;
         foot.totalNormalized += pressure;

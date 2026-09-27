@@ -1,4 +1,5 @@
 #include "DataFormatter.h"
+#include "../DataConfig.h"
 #include <math.h>
 
 float DataFormatter::roundToDecimals(float value, int decimals)
@@ -15,7 +16,7 @@ void DataFormatter::formatSensorData(const SensorData &source, FormattedSensorDa
 
 void DataFormatter::formatFootData(const FootData &source, FormattedFootData &dest)
 {
-    for (int i = 0; i < NUM_SENSORS_PER_FOOT; i++)
+    for (int i = 0; i < DataConfig::NUM_SENSORS_PER_FOOT; i++)
     {
         formatSensorData(source.sensors[i], dest.sensors[i]);
     }

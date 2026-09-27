@@ -1,4 +1,5 @@
 #include "DeviceManager.h"
+#include "../data/DataConfig.h"
 
 DeviceManager::DeviceManager(const char *host, int port) : sensorReader(muxController), networkManager(host, port), tcpClient(networkManager.getClient()), lastBlinkTime(0), wifiConnectionStartedAt(0), ledState(false), wifiConnectionPending(false), saveCredentialsOnConnect(false), rollbackCredentialsAvailable(false) {}
 
@@ -77,7 +78,7 @@ void DeviceManager::update()
 
     sensorReader.readAllSensors(leftFoot, rightFoot);
 
-    for (int i = 0; i < NUM_SENSORS_PER_FOOT; i++)
+    for (int i = 0; i < DataConfig::NUM_SENSORS_PER_FOOT; i++)
     {
         signalProcessor.process(leftFoot.sensors[i]);
         signalProcessor.process(rightFoot.sensors[i]);

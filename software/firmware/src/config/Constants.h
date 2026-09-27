@@ -19,7 +19,6 @@ const int RIGHT_FOOT_MUX = 32;
 const int LEFT_FOOT_MUX = 33;
 
 // Sensor configuration
-const int NUM_SENSORS_PER_FOOT = 9;
 const int ADC_MAX = 4095;
 const float VREF = 3.3f;
 

@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "config/Constants.h"
+#include "data/DataConfig.h"
 
 struct SensorData
 {
@@ -19,7 +20,7 @@ struct SensorData
 
 struct FootData
 {
-    SensorData sensors[NUM_SENSORS_PER_FOOT];
+    SensorData sensors[DataConfig::NUM_SENSORS_PER_FOOT];
     float totalNormalized;
     float copX;
     float copY;

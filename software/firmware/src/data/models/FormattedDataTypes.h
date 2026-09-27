@@ -1,7 +1,7 @@
 #ifndef FORMATTED_DATA_TYPES_H
 #define FORMATTED_DATA_TYPES_H
 
-#include "config/Constants.h"
+#include "data/DataConfig.h"
 
 struct FormattedSensorData
 {
@@ -13,7 +13,7 @@ struct FormattedSensorData
 
 struct FormattedFootData
 {
-    FormattedSensorData sensors[NUM_SENSORS_PER_FOOT];
+    FormattedSensorData sensors[DataConfig::NUM_SENSORS_PER_FOOT];
     float totalNormalized;
     float copX;
     float copY;
