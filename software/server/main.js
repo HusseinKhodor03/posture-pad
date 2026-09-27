@@ -2,15 +2,18 @@ import { createServer } from "http";
 import path from "path";
 import url from "url";
 import { createServerApp } from "./src/app/server-app.js";
-import {
-  FRONTEND_PUBLIC_PATH,
-  FRONTEND_URL,
-  HTTP_PORT,
-  STREAM_INACTIVITY_TIMEOUT_MS,
-  TCP_PORT,
-} from "./src/config/constants.js";
 import { TcpSensorServer } from "./src/network/tcp-sensor-server.js";
 import { WebSocketHub } from "./src/network/web-socket-hub.js";
+
+const DEFAULT_HTTP_PORT = 3000;
+const DEFAULT_TCP_PORT = 9000;
+const STREAM_INACTIVITY_TIMEOUT_MS = 3000;
+
+const HTTP_PORT = process.env.PORT || DEFAULT_HTTP_PORT;
+const TCP_PORT = process.env.TCP_PORT || DEFAULT_TCP_PORT;
+const FRONTEND_URL = process.env.FRONTEND_URL;
+
+const FRONTEND_PUBLIC_PATH = ["..", "frontend", "public"];
 
 function main() {
   const __filename = url.fileURLToPath(import.meta.url);
