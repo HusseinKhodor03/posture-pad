@@ -12,8 +12,8 @@ public:
     String buildPage(int page) const;
 
 private:
-    static const int MAX_WIFI_SCAN_RESULTS = 15;
-    static const int WIFI_SCAN_PAGE_SIZE = 2;
+    static constexpr int MAX_WIFI_SCAN_RESULTS = 15;
+    static constexpr int WIFI_SCAN_PAGE_SIZE = 2;
 
     String ssids[MAX_WIFI_SCAN_RESULTS];
     int rssis[MAX_WIFI_SCAN_RESULTS];
