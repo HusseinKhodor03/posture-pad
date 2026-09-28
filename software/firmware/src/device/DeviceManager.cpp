@@ -1,15 +1,12 @@
 #include "DeviceManager.h"
 #include "../data/DataConfig.h"
 
-DeviceManager::DeviceManager(const char *serverHost, int serverPort) : networkManager(serverHost, serverPort), lastBlinkTime(0), ledState(false) {}
+DeviceManager::DeviceManager(const char *serverHost, int serverPort) : networkManager(serverHost, serverPort) {}
 
 void DeviceManager::init()
 {
     Serial.begin(115200);
     delay(100);
-
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, LOW);
 
     FsrReader::init();
     deviceIdentity.begin();
@@ -33,8 +30,6 @@ void DeviceManager::update()
     networkManager.update();
     wifiConnectionWorkflow.updateConnectionState(bleProvisioner, networkManager);
 
-    updateLed();
-
     FsrReader::readAll(leftFoot, rightFoot);
 
     for (int i = 0; i < DataConfig::NUM_SENSORS_PER_FOOT; i++)
@@ -56,24 +51,4 @@ void DeviceManager::update()
 
     String json = JsonSerializer::serialize(deviceIdentity.getDeviceId(), deviceIdentity.getPairingToken(), networkManager.getSsid(), formattedLeftFoot, formattedRightFoot, formattedPostureMetrics, postureAnalysis);
     networkManager.send(json);
-}
-
-void DeviceManager::updateLed()
-{
-    unsigned long now = millis();
-
-    if (networkManager.isConnected())
-    {
-        digitalWrite(LED_BUILTIN, HIGH);
-        ledState = true;
-    }
-    else
-    {
-        if (now - lastBlinkTime > 1000)
-        {
-            ledState = !ledState;
-            digitalWrite(LED_BUILTIN, ledState ? HIGH : LOW);
-            lastBlinkTime = now;
-        }
-    }
 }

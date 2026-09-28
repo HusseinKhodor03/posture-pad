@@ -37,10 +37,6 @@ private:
     FormattedFootData formattedRightFoot;
     FormattedPostureMetrics formattedPostureMetrics;
 
-    unsigned long lastBlinkTime;
-    bool ledState;
-
-    void updateLed();
 };
 
 #endif
