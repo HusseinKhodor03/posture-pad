@@ -136,11 +136,6 @@ const String &NetworkManager::getSsid() const
     return ssid;
 }
 
-WiFiClient &NetworkManager::getClient()
-{
-    return client;
-}
-
 void NetworkManager::ensureWifiConnected()
 {
     if (ssid.isEmpty())

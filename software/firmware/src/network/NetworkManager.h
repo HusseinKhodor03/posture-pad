@@ -19,7 +19,6 @@ public:
     bool isWifiConnected();
     bool isConnected();
     const String &getSsid() const;
-    WiFiClient &getClient();
 
 private:
     String ssid;
