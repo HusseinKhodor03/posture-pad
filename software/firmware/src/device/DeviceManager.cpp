@@ -1,7 +1,7 @@
 #include "DeviceManager.h"
 #include "../data/DataConfig.h"
 
-DeviceManager::DeviceManager(const char *host, int port) : networkManager(host, port), lastBlinkTime(0), ledState(false) {}
+DeviceManager::DeviceManager(const char *serverHost, int serverPort) : networkManager(serverHost, serverPort), lastBlinkTime(0), ledState(false) {}
 
 void DeviceManager::init()
 {

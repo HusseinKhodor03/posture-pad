@@ -18,7 +18,7 @@
 class DeviceManager
 {
 public:
-    DeviceManager(const char *host, int port);
+    DeviceManager(const char *serverHost, int serverPort);
     void init();
     void update();
 

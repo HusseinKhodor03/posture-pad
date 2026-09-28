@@ -23,8 +23,8 @@ public:
 private:
     String ssid;
     String password;
-    const char *host;
-    int port;
+    const char *serverHost;
+    int serverPort;
 
     WiFiClient client;
     unsigned long lastWifiAttempt;

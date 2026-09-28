@@ -11,7 +11,7 @@ namespace
     constexpr unsigned long TCP_RETRY_MS = 3000;
 }
 
-NetworkManager::NetworkManager(const char *host, int port) : host(host), port(port), lastWifiAttempt(0), lastTcpAttempt(0) {}
+NetworkManager::NetworkManager(const char *serverHost, int serverPort) : serverHost(serverHost), serverPort(serverPort), lastWifiAttempt(0), lastTcpAttempt(0) {}
 
 void NetworkManager::connect(const String &newSsid, const String &newPassword)
 {
@@ -169,5 +169,5 @@ void NetworkManager::ensureTcpConnected()
     lastTcpAttempt = now;
     client.stop();
     delay(100);
-    client.connect(host, port);
+    client.connect(serverHost, serverPort);
 }
