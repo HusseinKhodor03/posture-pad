@@ -1,6 +1,8 @@
 #ifndef BLE_PROVISIONER_H
 #define BLE_PROVISIONER_H
 
+#include "SetupSession.h"
+
 #include <Arduino.h>
 #include <NimBLEDevice.h>
 
@@ -23,8 +25,7 @@ private:
     static const int WIFI_SCAN_PAGE_SIZE = 2;
 
     bool started;
-    String activeSetupSession;
-    unsigned long activeSetupSessionLastSeen;
+    SetupSession setupSession;
     String pendingSsid;
     String pendingPassword;
     bool connectionRequested;
@@ -44,10 +45,13 @@ private:
     String buildDeviceId() const;
     String loadPairingToken() const;
     String createPairingToken() const;
-    bool setupSessionExpired() const;
+    bool expireSetupSessionIfTimedOut();
     bool setupSessionMatches(const String &sessionId);
+    bool pingSetupSession(const String &sessionId);
+    void recordSetupSessionActivity();
     void claimSetupSession(const String &sessionId);
     void releaseSetupSession();
+    void clearSetupSessionWorkflowState();
     void publishScanPage(int page);
     void publishScanResults(const String &scanResults);
     void publishSetupSessionStatus(const String &status);

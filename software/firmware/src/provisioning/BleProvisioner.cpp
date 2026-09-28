@@ -19,10 +19,9 @@ namespace
     const char *SETUP_SESSION_UUID = "0ad025b5-07ca-49a8-b3f7-03865f5f924f";
     const char *PREFERENCES_NAMESPACE = "posture-pad";
     const char *PAIRING_TOKEN_KEY = "pairing_token";
-    const unsigned long SETUP_SESSION_TIMEOUT_MS = 15000;
 }
 
-BleProvisioner::BleProvisioner() : started(false), activeSetupSessionLastSeen(0), connectionRequested(false), scanRequested(false), forgetRequested(false), statusCharacteristic(nullptr), scanResultsCharacteristic(nullptr), setupSessionCharacteristic(nullptr), scanResultCount(0) {}
+BleProvisioner::BleProvisioner() : started(false), connectionRequested(false), scanRequested(false), forgetRequested(false), statusCharacteristic(nullptr), scanResultsCharacteristic(nullptr), setupSessionCharacteristic(nullptr), scanResultCount(0) {}
 
 void BleProvisioner::begin()
 {
@@ -116,20 +115,19 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
         {
             releaseSetupSession();
         }
-        else if (!pingSession.isEmpty() && setupSessionMatches(pingSession))
+        else if (!pingSession.isEmpty() && pingSetupSession(pingSession))
         {
-            activeSetupSessionLastSeen = millis();
-            publishSetupSessionStatus(ProvisioningProtocol::formatClaimedSetupSessionStatus(activeSetupSession));
+            publishSetupSessionStatus(ProvisioningProtocol::formatClaimedSetupSessionStatus(setupSession.getSessionId()));
         }
         else if (!scanSession.isEmpty() && setupSessionMatches(scanSession))
         {
-            activeSetupSessionLastSeen = millis();
+            recordSetupSessionActivity();
             scanRequested = true;
             Serial.println("Wi-Fi scan requested");
         }
         else if (ProvisioningProtocol::parseScanPageCommand(command, scanPageSession, scanPage) && setupSessionMatches(scanPageSession))
         {
-            activeSetupSessionLastSeen = millis();
+            recordSetupSessionActivity();
             publishScanPage(scanPage);
         }
         else if (!connectSession.isEmpty() && setupSessionMatches(connectSession) && !pendingSsid.isEmpty())
@@ -150,8 +148,7 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
 
 bool BleProvisioner::takeConnectionRequest(String &ssid, String &password)
 {
-    if (setupSessionExpired())
-        releaseSetupSession();
+    expireSetupSessionIfTimedOut();
 
     if (!connectionRequested)
         return false;
@@ -168,21 +165,19 @@ bool BleProvisioner::takeConnectionRequest(String &ssid, String &password)
 
 bool BleProvisioner::takeScanRequest()
 {
-    if (setupSessionExpired())
-        releaseSetupSession();
+    expireSetupSessionIfTimedOut();
 
     if (!scanRequested)
         return false;
 
-    activeSetupSessionLastSeen = millis();
+    recordSetupSessionActivity();
     scanRequested = false;
     return true;
 }
 
 bool BleProvisioner::takeForgetRequest()
 {
-    if (setupSessionExpired())
-        releaseSetupSession();
+    expireSetupSessionIfTimedOut();
 
     if (!forgetRequested)
         return false;
@@ -193,12 +188,12 @@ bool BleProvisioner::takeForgetRequest()
 
 void BleProvisioner::scanWifiNetworks()
 {
-    activeSetupSessionLastSeen = millis();
+    recordSetupSessionActivity();
     publishScanResults(ProvisioningProtocol::SCAN_RESULTS_SCANNING);
 
     WiFi.mode(WIFI_STA);
     int networkCount = WiFi.scanNetworks();
-    activeSetupSessionLastSeen = millis();
+    recordSetupSessionActivity();
 
     if (networkCount < 0)
     {
@@ -328,7 +323,7 @@ const String &BleProvisioner::getPairingToken() const
 
 void BleProvisioner::publishScanPage(int page)
 {
-    activeSetupSessionLastSeen = millis();
+    recordSetupSessionActivity();
 
     if (page < 0)
         page = 0;
@@ -401,20 +396,35 @@ String BleProvisioner::createPairingToken() const
     return String(token);
 }
 
-bool BleProvisioner::setupSessionExpired() const
+bool BleProvisioner::expireSetupSessionIfTimedOut()
 {
-    return !activeSetupSession.isEmpty() && millis() - activeSetupSessionLastSeen > SETUP_SESSION_TIMEOUT_MS;
+    if (!setupSession.expireIfTimedOut(millis()))
+        return false;
+
+    clearSetupSessionWorkflowState();
+    publishSetupSessionStatus(ProvisioningProtocol::SETUP_SESSION_AVAILABLE);
+    return true;
 }
 
 bool BleProvisioner::setupSessionMatches(const String &sessionId)
 {
-    if (setupSessionExpired())
-    {
-        releaseSetupSession();
+    if (expireSetupSessionIfTimedOut())
         return false;
-    }
 
-    return !sessionId.isEmpty() && sessionId == activeSetupSession;
+    return setupSession.owns(sessionId);
+}
+
+bool BleProvisioner::pingSetupSession(const String &sessionId)
+{
+    if (expireSetupSessionIfTimedOut())
+        return false;
+
+    return setupSession.ping(sessionId, millis());
+}
+
+void BleProvisioner::recordSetupSessionActivity()
+{
+    setupSession.recordActivity(millis());
 }
 
 void BleProvisioner::claimSetupSession(const String &sessionId)
@@ -425,14 +435,11 @@ void BleProvisioner::claimSetupSession(const String &sessionId)
         return;
     }
 
-    if (setupSessionExpired())
-        releaseSetupSession();
+    expireSetupSessionIfTimedOut();
 
-    if (activeSetupSession.isEmpty() || activeSetupSession == sessionId)
+    if (setupSession.claim(sessionId, millis()))
     {
-        activeSetupSession = sessionId;
-        activeSetupSessionLastSeen = millis();
-        publishSetupSessionStatus(ProvisioningProtocol::formatClaimedSetupSessionStatus(activeSetupSession));
+        publishSetupSessionStatus(ProvisioningProtocol::formatClaimedSetupSessionStatus(setupSession.getSessionId()));
         return;
     }
 
@@ -441,20 +448,23 @@ void BleProvisioner::claimSetupSession(const String &sessionId)
 
 void BleProvisioner::releaseSetupSession()
 {
-    if (activeSetupSession.isEmpty())
+    if (!setupSession.release())
     {
         publishSetupSessionStatus(ProvisioningProtocol::SETUP_SESSION_AVAILABLE);
         return;
     }
 
-    activeSetupSession = "";
-    activeSetupSessionLastSeen = 0;
+    clearSetupSessionWorkflowState();
+    publishSetupSessionStatus(ProvisioningProtocol::SETUP_SESSION_AVAILABLE);
+}
+
+void BleProvisioner::clearSetupSessionWorkflowState()
+{
     pendingSsid = "";
     pendingPassword = "";
     connectionRequested = false;
     scanRequested = false;
     forgetRequested = false;
-    publishSetupSessionStatus(ProvisioningProtocol::SETUP_SESSION_AVAILABLE);
 }
 
 void BleProvisioner::publishSetupSessionStatus(const String &status)
