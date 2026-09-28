@@ -112,6 +112,15 @@ void NetworkManager::update()
     ensureTcpConnected();
 }
 
+bool NetworkManager::send(const String &data)
+{
+    if (!client.connected())
+        return false;
+
+    client.println(data);
+    return true;
+}
+
 bool NetworkManager::isWifiConnected()
 {
     return WiFi.status() == WL_CONNECTED;

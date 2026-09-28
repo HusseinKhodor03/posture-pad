@@ -14,7 +14,6 @@
 #include "../data/JsonSerializer.h"
 #include "../provisioning/BleProvisioner.h"
 #include "../network/NetworkManager.h"
-#include "../network/TcpClient.h"
 
 class DeviceManager
 {
@@ -35,7 +34,6 @@ private:
     WifiConnectionWorkflow wifiConnectionWorkflow;
     BleProvisioner bleProvisioner;
     NetworkManager networkManager;
-    TcpClient tcpClient;
 
     FootData leftFoot;
     FootData rightFoot;

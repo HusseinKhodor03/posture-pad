@@ -1,7 +1,7 @@
 #include "DeviceManager.h"
 #include "../data/DataConfig.h"
 
-DeviceManager::DeviceManager(const char *host, int port) : sensorReader(muxController), networkManager(host, port), tcpClient(networkManager.getClient()), lastBlinkTime(0), ledState(false) {}
+DeviceManager::DeviceManager(const char *host, int port) : sensorReader(muxController), networkManager(host, port), lastBlinkTime(0), ledState(false) {}
 
 void DeviceManager::init()
 {
@@ -55,7 +55,7 @@ void DeviceManager::update()
     dataFormatter.formatPostureMetrics(postureMetrics, formattedPostureMetrics);
 
     String json = jsonSerializer.serialize(deviceIdentity.getDeviceId(), deviceIdentity.getPairingToken(), networkManager.getSsid(), formattedLeftFoot, formattedRightFoot, formattedPostureMetrics, postureAnalysis);
-    tcpClient.send(json);
+    networkManager.send(json);
 }
 
 void DeviceManager::updateLed()

@@ -15,6 +15,7 @@ public:
     void stopConnection();
     void forgetCredentials();
     void update();
+    bool send(const String &data);
     bool isWifiConnected();
     bool isConnected();
     const String &getSsid() const;
