@@ -6,7 +6,7 @@
 #include "WifiConnectionWorkflow.h"
 #include "../data/RawDataTypes.h"
 #include "../data/FormattedDataTypes.h"
-#include "../sensors/SensorReader.h"
+#include "../sensors/FsrReader.h"
 #include "../processing/SignalProcessor.h"
 #include "../processing/MetricsCalculator.h"
 #include "../processing/PostureAnalyzer.h"
@@ -23,8 +23,6 @@ public:
     void update();
 
 private:
-    MuxController muxController;
-    SensorReader sensorReader;
     DeviceIdentity deviceIdentity;
     WifiConnectionWorkflow wifiConnectionWorkflow;
     BleProvisioner bleProvisioner;

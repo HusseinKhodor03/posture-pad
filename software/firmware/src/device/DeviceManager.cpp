@@ -1,7 +1,7 @@
 #include "DeviceManager.h"
 #include "../data/DataConfig.h"
 
-DeviceManager::DeviceManager(const char *host, int port) : sensorReader(muxController), networkManager(host, port), lastBlinkTime(0), ledState(false) {}
+DeviceManager::DeviceManager(const char *host, int port) : networkManager(host, port), lastBlinkTime(0), ledState(false) {}
 
 void DeviceManager::init()
 {
@@ -11,7 +11,7 @@ void DeviceManager::init()
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
 
-    sensorReader.init();
+    FsrReader::init();
     deviceIdentity.begin();
     bleProvisioner.begin(deviceIdentity);
     wifiConnectionWorkflow.beginSavedConnection(bleProvisioner, networkManager);
@@ -35,7 +35,7 @@ void DeviceManager::update()
 
     updateLed();
 
-    sensorReader.readAllSensors(leftFoot, rightFoot);
+    FsrReader::readAll(leftFoot, rightFoot);
 
     for (int i = 0; i < DataConfig::NUM_SENSORS_PER_FOOT; i++)
     {
