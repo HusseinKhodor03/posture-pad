@@ -3,14 +3,10 @@
 
 #include "../data/RawDataTypes.h"
 
-class MetricsCalculator
+namespace MetricsCalculator
 {
-public:
     void calculateFootMetrics(FootData &foot, bool isRightFoot);
     void calculatePostureMetrics(const FootData &leftFoot, const FootData &rightFoot, PostureMetrics &metrics);
-
-private:
-    bool isMedialSensor(int index, bool isRightFoot);
-};
+}
 
 #endif

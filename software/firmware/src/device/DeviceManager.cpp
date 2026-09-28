@@ -39,22 +39,22 @@ void DeviceManager::update()
 
     for (int i = 0; i < DataConfig::NUM_SENSORS_PER_FOOT; i++)
     {
-        signalProcessor.process(leftFoot.sensors[i]);
-        signalProcessor.process(rightFoot.sensors[i]);
+        SignalProcessor::process(leftFoot.sensors[i]);
+        SignalProcessor::process(rightFoot.sensors[i]);
     }
 
-    metricsCalculator.calculateFootMetrics(leftFoot, false);
-    metricsCalculator.calculateFootMetrics(rightFoot, true);
+    MetricsCalculator::calculateFootMetrics(leftFoot, false);
+    MetricsCalculator::calculateFootMetrics(rightFoot, true);
 
-    metricsCalculator.calculatePostureMetrics(leftFoot, rightFoot, postureMetrics);
+    MetricsCalculator::calculatePostureMetrics(leftFoot, rightFoot, postureMetrics);
 
-    postureAnalyzer.analyze(postureMetrics, postureAnalysis);
+    PostureAnalyzer::analyze(postureMetrics, postureAnalysis);
 
-    dataFormatter.formatFootData(leftFoot, formattedLeftFoot);
-    dataFormatter.formatFootData(rightFoot, formattedRightFoot);
-    dataFormatter.formatPostureMetrics(postureMetrics, formattedPostureMetrics);
+    DataFormatter::formatFootData(leftFoot, formattedLeftFoot);
+    DataFormatter::formatFootData(rightFoot, formattedRightFoot);
+    DataFormatter::formatPostureMetrics(postureMetrics, formattedPostureMetrics);
 
-    String json = jsonSerializer.serialize(deviceIdentity.getDeviceId(), deviceIdentity.getPairingToken(), networkManager.getSsid(), formattedLeftFoot, formattedRightFoot, formattedPostureMetrics, postureAnalysis);
+    String json = JsonSerializer::serialize(deviceIdentity.getDeviceId(), deviceIdentity.getPairingToken(), networkManager.getSsid(), formattedLeftFoot, formattedRightFoot, formattedPostureMetrics, postureAnalysis);
     networkManager.send(json);
 }
 

@@ -3,14 +3,9 @@
 
 #include "../data/RawDataTypes.h"
 
-class SignalProcessor
+namespace SignalProcessor
 {
-public:
     void process(SensorData &sensor);
-
-private:
-    float applyEma(float currentValue, float newValue, float alpha);
-    float adcToVoltage(int adcValue);
-};
+}
 
 #endif

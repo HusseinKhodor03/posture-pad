@@ -1,6 +1,47 @@
 #include "JsonSerializer.h"
 #include "DataConfig.h"
 
+namespace
+{
+    void addSensorData(JsonObject &sensorObj, const FormattedSensorData sensors[], int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            JsonObject sensor = sensorObj["sensor" + String(i)].to<JsonObject>();
+            sensor["voltage"] = sensors[i].voltage;
+            sensor["normalized"] = sensors[i].normalized;
+        }
+    }
+
+    void addFootMetrics(JsonObject &metricsObj, const FormattedFootData &foot)
+    {
+        metricsObj["total_normalized"] = foot.totalNormalized;
+        metricsObj["cop_x"] = foot.copX;
+        metricsObj["cop_y"] = foot.copY;
+        metricsObj["forefoot_pressure"] = foot.forefootPressure;
+        metricsObj["rearfoot_pressure"] = foot.rearfootPressure;
+        metricsObj["medial_pressure"] = foot.medialPressure;
+        metricsObj["lateral_pressure"] = foot.lateralPressure;
+    }
+
+    void addPostureMetrics(JsonObject &postureObj, const FormattedPostureMetrics &posture)
+    {
+        postureObj["left_percent"] = posture.leftPercent;
+        postureObj["right_percent"] = posture.rightPercent;
+        postureObj["balance_ratio"] = posture.balanceRatio;
+        postureObj["forefoot_rearfoot_ratio"] = posture.forefootRearfootRatio;
+        postureObj["medial_lateral_ratio"] = posture.medialLateralRatio;
+        postureObj["symmetry_index"] = posture.symmetryIndex;
+        postureObj["stability_score"] = posture.stabilityScore;
+    }
+
+    void addPostureAnalysis(JsonObject &analysisObj, const PostureAnalysis &analysis)
+    {
+        analysisObj["posture_state"] = analysis.postureState;
+        analysisObj["posture_suggestion"] = analysis.postureSuggestion;
+    }
+}
+
 String JsonSerializer::serialize(const String &deviceId, const String &pairingToken, const String &wifiSsid, const FormattedFootData &leftFoot, const FormattedFootData &rightFoot,
                                  const FormattedPostureMetrics &metrics, const PostureAnalysis &analysis)
 {
@@ -33,42 +74,4 @@ String JsonSerializer::serialize(const String &deviceId, const String &pairingTo
     String jsonString;
     serializeJson(doc, jsonString);
     return jsonString;
-}
-
-void JsonSerializer::addSensorData(JsonObject &sensorObj, const FormattedSensorData sensors[], int count)
-{
-    for (int i = 0; i < count; i++)
-    {
-        JsonObject sensor = sensorObj["sensor" + String(i)].to<JsonObject>();
-        sensor["voltage"] = sensors[i].voltage;
-        sensor["normalized"] = sensors[i].normalized;
-    }
-}
-
-void JsonSerializer::addFootMetrics(JsonObject &metricsObj, const FormattedFootData &foot)
-{
-    metricsObj["total_normalized"] = foot.totalNormalized;
-    metricsObj["cop_x"] = foot.copX;
-    metricsObj["cop_y"] = foot.copY;
-    metricsObj["forefoot_pressure"] = foot.forefootPressure;
-    metricsObj["rearfoot_pressure"] = foot.rearfootPressure;
-    metricsObj["medial_pressure"] = foot.medialPressure;
-    metricsObj["lateral_pressure"] = foot.lateralPressure;
-}
-
-void JsonSerializer::addPostureMetrics(JsonObject &postureObj, const FormattedPostureMetrics &posture)
-{
-    postureObj["left_percent"] = posture.leftPercent;
-    postureObj["right_percent"] = posture.rightPercent;
-    postureObj["balance_ratio"] = posture.balanceRatio;
-    postureObj["forefoot_rearfoot_ratio"] = posture.forefootRearfootRatio;
-    postureObj["medial_lateral_ratio"] = posture.medialLateralRatio;
-    postureObj["symmetry_index"] = posture.symmetryIndex;
-    postureObj["stability_score"] = posture.stabilityScore;
-}
-
-void JsonSerializer::addPostureAnalysis(JsonObject &analysisObj, const PostureAnalysis &analysis)
-{
-    analysisObj["posture_state"] = analysis.postureState;
-    analysisObj["posture_suggestion"] = analysis.postureSuggestion;
 }

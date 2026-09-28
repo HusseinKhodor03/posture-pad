@@ -5,17 +5,10 @@
 #include "RawDataTypes.h"
 #include "FormattedDataTypes.h"
 
-class JsonSerializer
+namespace JsonSerializer
 {
-public:
     String serialize(const String &deviceId, const String &pairingToken, const String &wifiSsid, const FormattedFootData &leftFoot, const FormattedFootData &rightFoot,
                      const FormattedPostureMetrics &metrics, const PostureAnalysis &analysis);
-
-private:
-    void addSensorData(JsonObject &sensorsObj, const FormattedSensorData sensors[], int count);
-    void addFootMetrics(JsonObject &metricsObj, const FormattedFootData &foot);
-    void addPostureMetrics(JsonObject &postureObj, const FormattedPostureMetrics &posture);
-    void addPostureAnalysis(JsonObject &analysisObj, const PostureAnalysis &analysis);
-};
+}
 
 #endif

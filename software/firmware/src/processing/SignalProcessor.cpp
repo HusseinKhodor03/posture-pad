@@ -8,16 +8,16 @@ namespace
     constexpr float EMA_ALPHA = 0.3f;
     constexpr float NORMALIZATION_DECAY_RATE = 0.0005f;
     constexpr float MIN_VOLTAGE_RANGE = 0.1f;
-}
 
-float SignalProcessor::applyEma(float currentValue, float newValue, float alpha)
-{
-    return (alpha * newValue) + ((1.0f - alpha) * currentValue);
-}
+    float applyEma(float currentValue, float newValue, float alpha)
+    {
+        return (alpha * newValue) + ((1.0f - alpha) * currentValue);
+    }
 
-float SignalProcessor::adcToVoltage(int adcValue)
-{
-    return (float)adcValue * (VREF / ADC_MAX);
+    float adcToVoltage(int adcValue)
+    {
+        return (float)adcValue * (VREF / ADC_MAX);
+    }
 }
 
 void SignalProcessor::process(SensorData &sensor)

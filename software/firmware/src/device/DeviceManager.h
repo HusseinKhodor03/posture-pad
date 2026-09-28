@@ -25,11 +25,6 @@ public:
 private:
     MuxController muxController;
     SensorReader sensorReader;
-    SignalProcessor signalProcessor;
-    MetricsCalculator metricsCalculator;
-    PostureAnalyzer postureAnalyzer;
-    DataFormatter dataFormatter;
-    JsonSerializer jsonSerializer;
     DeviceIdentity deviceIdentity;
     WifiConnectionWorkflow wifiConnectionWorkflow;
     BleProvisioner bleProvisioner;

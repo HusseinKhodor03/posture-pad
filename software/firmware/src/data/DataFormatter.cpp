@@ -10,12 +10,12 @@ namespace
     constexpr int RATIO_DECIMALS = 2;
     constexpr int PERCENTAGE_DECIMALS = 1;
     constexpr int PRESSURE_DECIMALS = 2;
-}
 
-float DataFormatter::roundToDecimals(float value, int decimals)
-{
-    float multiplier = powf(10.0f, (float)decimals);
-    return roundf(value * multiplier) / multiplier;
+    float roundToDecimals(float value, int decimals)
+    {
+        float multiplier = powf(10.0f, (float)decimals);
+        return roundf(value * multiplier) / multiplier;
+    }
 }
 
 void DataFormatter::formatSensorData(const SensorData &source, FormattedSensorData &dest)

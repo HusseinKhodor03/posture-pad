@@ -3,10 +3,9 @@
 
 #include "../data/RawDataTypes.h"
 
-class PostureAnalyzer
+namespace PostureAnalyzer
 {
-public:
     void analyze(const PostureMetrics &metrics, PostureAnalysis &analysis);
-};
+}
 
 #endif

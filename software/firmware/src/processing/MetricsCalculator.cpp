@@ -29,6 +29,11 @@ namespace
         {0.73, 0.613}, // sensor7 - lower right
         {0.49, 0.85}   // sensor8 - heel
     };
+
+    bool isMedialSensor(int index, bool isRightFoot)
+    {
+        return (index == 0 || index == 1 || index == 4 || index == 6 || index == 8);
+    }
 }
 
 void MetricsCalculator::calculateFootMetrics(FootData &foot, bool isRightFoot)
@@ -105,9 +110,4 @@ void MetricsCalculator::calculatePostureMetrics(const FootData &leftFoot, const 
     {
         metrics = PostureMetrics();
     }
-}
-
-bool MetricsCalculator::isMedialSensor(int index, bool isRightFoot)
-{
-    return (index == 0 || index == 1 || index == 4 || index == 6 || index == 8);
 }
