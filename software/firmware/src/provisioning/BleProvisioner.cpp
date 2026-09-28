@@ -1,4 +1,5 @@
 #include "BleProvisioner.h"
+#include "ProvisioningProtocol.h"
 
 #include <ArduinoJson.h>
 #include <Preferences.h>
@@ -54,10 +55,10 @@ void BleProvisioner::begin()
 
     deviceIdCharacteristic->setValue(deviceId.c_str());
     pairingTokenCharacteristic->setValue(pairingToken.c_str());
-    statusCharacteristic->setValue("unconfigured");
-    scanResultsCharacteristic->setValue("{\"status\":\"idle\",\"networks\":[]}");
-    setupSessionCharacteristic->setValue("available");
-    currentStatus = "unconfigured";
+    statusCharacteristic->setValue(ProvisioningProtocol::STATUS_UNCONFIGURED);
+    scanResultsCharacteristic->setValue(ProvisioningProtocol::SCAN_RESULTS_IDLE);
+    setupSessionCharacteristic->setValue(ProvisioningProtocol::SETUP_SESSION_AVAILABLE);
+    currentStatus = ProvisioningProtocol::STATUS_UNCONFIGURED;
 
     NimBLEAdvertising *advertising = NimBLEDevice::getAdvertising();
     advertising->setName(deviceName.c_str());
@@ -98,14 +99,14 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
     {
         String command = value.c_str();
 
-        String claimSession = getCommandSession(command, "claim:");
-        String releaseSession = getCommandSession(command, "release:");
-        String pingSession = getCommandSession(command, "ping:");
-        String scanSession = getCommandSession(command, "scan:");
+        String claimSession = ProvisioningProtocol::getClaimSession(command);
+        String releaseSession = ProvisioningProtocol::getReleaseSession(command);
+        String pingSession = ProvisioningProtocol::getPingSession(command);
+        String scanSession = ProvisioningProtocol::getScanSession(command);
         String scanPageSession;
         int scanPage = 0;
-        String connectSession = getCommandSession(command, "connect:");
-        String forgetSession = getCommandSession(command, "forget:");
+        String connectSession = ProvisioningProtocol::getConnectSession(command);
+        String forgetSession = ProvisioningProtocol::getForgetSession(command);
 
         if (!claimSession.isEmpty())
         {
@@ -118,7 +119,7 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
         else if (!pingSession.isEmpty() && setupSessionMatches(pingSession))
         {
             activeSetupSessionLastSeen = millis();
-            publishSetupSessionStatus("claimed:" + activeSetupSession);
+            publishSetupSessionStatus(ProvisioningProtocol::formatClaimedSetupSessionStatus(activeSetupSession));
         }
         else if (!scanSession.isEmpty() && setupSessionMatches(scanSession))
         {
@@ -126,7 +127,7 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
             scanRequested = true;
             Serial.println("Wi-Fi scan requested");
         }
-        else if (parseScanPageCommand(command, scanPageSession, scanPage) && setupSessionMatches(scanPageSession))
+        else if (ProvisioningProtocol::parseScanPageCommand(command, scanPageSession, scanPage) && setupSessionMatches(scanPageSession))
         {
             activeSetupSessionLastSeen = millis();
             publishScanPage(scanPage);
@@ -193,7 +194,7 @@ bool BleProvisioner::takeForgetRequest()
 void BleProvisioner::scanWifiNetworks()
 {
     activeSetupSessionLastSeen = millis();
-    publishScanResults("{\"status\":\"scanning\",\"networks\":[]}");
+    publishScanResults(ProvisioningProtocol::SCAN_RESULTS_SCANNING);
 
     WiFi.mode(WIFI_STA);
     int networkCount = WiFi.scanNetworks();
@@ -202,7 +203,7 @@ void BleProvisioner::scanWifiNetworks()
     if (networkCount < 0)
     {
         scanResultCount = 0;
-        publishScanResults("{\"status\":\"failed\",\"networks\":[]}");
+        publishScanResults(ProvisioningProtocol::SCAN_RESULTS_FAILED);
         WiFi.scanDelete();
         return;
     }
@@ -301,7 +302,7 @@ void BleProvisioner::setStatus(const String &status, const String &wifiSsid)
         return;
 
     String statusValue = status;
-    if (status == "connected" && !wifiSsid.isEmpty())
+    if (status == ProvisioningProtocol::STATUS_CONNECTED && !wifiSsid.isEmpty())
     {
         statusValue += ":";
         statusValue += wifiSsid;
@@ -336,7 +337,7 @@ void BleProvisioner::publishScanPage(int page)
     int endIndex = min(startIndex + WIFI_SCAN_PAGE_SIZE, scanResultCount);
 
     JsonDocument doc;
-    doc["status"] = "complete";
+    doc["status"] = ProvisioningProtocol::SCAN_STATUS_COMPLETE;
     doc["page"] = page;
     doc["has_more"] = endIndex < scanResultCount;
     JsonArray networks = doc["networks"].to<JsonArray>();
@@ -416,36 +417,11 @@ bool BleProvisioner::setupSessionMatches(const String &sessionId)
     return !sessionId.isEmpty() && sessionId == activeSetupSession;
 }
 
-String BleProvisioner::getCommandSession(const String &command, const String &prefix) const
-{
-    if (!command.startsWith(prefix))
-        return "";
-
-    return command.substring(prefix.length());
-}
-
-bool BleProvisioner::parseScanPageCommand(const String &command, String &sessionId, int &page) const
-{
-    String value = getCommandSession(command, "scan_page:");
-
-    if (value.isEmpty())
-        return false;
-
-    int separatorIndex = value.indexOf(':');
-
-    if (separatorIndex < 0)
-        return false;
-
-    sessionId = value.substring(0, separatorIndex);
-    page = value.substring(separatorIndex + 1).toInt();
-    return true;
-}
-
 void BleProvisioner::claimSetupSession(const String &sessionId)
 {
     if (sessionId.isEmpty())
     {
-        publishSetupSessionStatus("busy");
+        publishSetupSessionStatus(ProvisioningProtocol::SETUP_SESSION_BUSY);
         return;
     }
 
@@ -456,18 +432,18 @@ void BleProvisioner::claimSetupSession(const String &sessionId)
     {
         activeSetupSession = sessionId;
         activeSetupSessionLastSeen = millis();
-        publishSetupSessionStatus("claimed:" + activeSetupSession);
+        publishSetupSessionStatus(ProvisioningProtocol::formatClaimedSetupSessionStatus(activeSetupSession));
         return;
     }
 
-    publishSetupSessionStatus("busy");
+    publishSetupSessionStatus(ProvisioningProtocol::SETUP_SESSION_BUSY);
 }
 
 void BleProvisioner::releaseSetupSession()
 {
     if (activeSetupSession.isEmpty())
     {
-        publishSetupSessionStatus("available");
+        publishSetupSessionStatus(ProvisioningProtocol::SETUP_SESSION_AVAILABLE);
         return;
     }
 
@@ -478,7 +454,7 @@ void BleProvisioner::releaseSetupSession()
     connectionRequested = false;
     scanRequested = false;
     forgetRequested = false;
-    publishSetupSessionStatus("available");
+    publishSetupSessionStatus(ProvisioningProtocol::SETUP_SESSION_AVAILABLE);
 }
 
 void BleProvisioner::publishSetupSessionStatus(const String &status)

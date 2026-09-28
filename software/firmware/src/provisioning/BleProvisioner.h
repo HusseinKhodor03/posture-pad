@@ -46,8 +46,6 @@ private:
     String createPairingToken() const;
     bool setupSessionExpired() const;
     bool setupSessionMatches(const String &sessionId);
-    String getCommandSession(const String &command, const String &prefix) const;
-    bool parseScanPageCommand(const String &command, String &sessionId, int &page) const;
     void claimSetupSession(const String &sessionId);
     void releaseSetupSession();
     void publishScanPage(int page);
