@@ -1,7 +1,6 @@
 #include "BleProvisioner.h"
 #include "ProvisioningProtocol.h"
 
-#include <ArduinoJson.h>
 #include <Preferences.h>
 #include <WiFi.h>
 #include <esp_system.h>
@@ -21,7 +20,7 @@ namespace
     const char *PAIRING_TOKEN_KEY = "pairing_token";
 }
 
-BleProvisioner::BleProvisioner() : started(false), connectionRequested(false), scanRequested(false), forgetRequested(false), statusCharacteristic(nullptr), scanResultsCharacteristic(nullptr), setupSessionCharacteristic(nullptr), scanResultCount(0) {}
+BleProvisioner::BleProvisioner() : started(false), connectionRequested(false), scanRequested(false), forgetRequested(false), statusCharacteristic(nullptr), scanResultsCharacteristic(nullptr), setupSessionCharacteristic(nullptr) {}
 
 void BleProvisioner::begin()
 {
@@ -197,91 +196,23 @@ void BleProvisioner::scanWifiNetworks()
 
     if (networkCount < 0)
     {
-        scanResultCount = 0;
+        wifiScanResults.clear();
         publishScanResults(ProvisioningProtocol::SCAN_RESULTS_FAILED);
         WiFi.scanDelete();
         return;
     }
 
-    scanResultCount = 0;
+    wifiScanResults.clear();
 
     for (int i = 0; i < networkCount; i++)
     {
         String ssid = WiFi.SSID(i);
-
-        if (ssid.isEmpty())
-            continue;
-
         int rssi = WiFi.RSSI(i);
         bool secure = WiFi.encryptionType(i) != WIFI_AUTH_OPEN;
-        int existingIndex = -1;
-
-        for (int j = 0; j < scanResultCount; j++)
-        {
-            if (scanSsids[j] == ssid)
-            {
-                existingIndex = j;
-                break;
-            }
-        }
-
-        if (existingIndex >= 0)
-        {
-            if (rssi > scanRssis[existingIndex])
-            {
-                scanRssis[existingIndex] = rssi;
-                scanSecure[existingIndex] = secure;
-            }
-
-            continue;
-        }
-
-        if (scanResultCount < MAX_WIFI_SCAN_RESULTS)
-        {
-            scanSsids[scanResultCount] = ssid;
-            scanRssis[scanResultCount] = rssi;
-            scanSecure[scanResultCount] = secure;
-            scanResultCount++;
-            continue;
-        }
-
-        int weakestIndex = 0;
-
-        for (int j = 1; j < scanResultCount; j++)
-        {
-            if (scanRssis[j] < scanRssis[weakestIndex])
-                weakestIndex = j;
-        }
-
-        if (rssi > scanRssis[weakestIndex])
-        {
-            scanSsids[weakestIndex] = ssid;
-            scanRssis[weakestIndex] = rssi;
-            scanSecure[weakestIndex] = secure;
-        }
+        wifiScanResults.addOrUpdate(ssid, rssi, secure);
     }
 
-    for (int i = 0; i < scanResultCount - 1; i++)
-    {
-        for (int j = i + 1; j < scanResultCount; j++)
-        {
-            if (scanRssis[j] > scanRssis[i])
-            {
-                String tempSsid = scanSsids[i];
-                int tempRssi = scanRssis[i];
-                bool tempSecure = scanSecure[i];
-
-                scanSsids[i] = scanSsids[j];
-                scanRssis[i] = scanRssis[j];
-                scanSecure[i] = scanSecure[j];
-
-                scanSsids[j] = tempSsid;
-                scanRssis[j] = tempRssi;
-                scanSecure[j] = tempSecure;
-            }
-        }
-    }
-
+    wifiScanResults.sortBySignalStrength();
     publishScanPage(0);
     WiFi.scanDelete();
 }
@@ -324,30 +255,7 @@ const String &BleProvisioner::getPairingToken() const
 void BleProvisioner::publishScanPage(int page)
 {
     recordSetupSessionActivity();
-
-    if (page < 0)
-        page = 0;
-
-    int startIndex = page * WIFI_SCAN_PAGE_SIZE;
-    int endIndex = min(startIndex + WIFI_SCAN_PAGE_SIZE, scanResultCount);
-
-    JsonDocument doc;
-    doc["status"] = ProvisioningProtocol::SCAN_STATUS_COMPLETE;
-    doc["page"] = page;
-    doc["has_more"] = endIndex < scanResultCount;
-    JsonArray networks = doc["networks"].to<JsonArray>();
-
-    for (int i = startIndex; i < endIndex; i++)
-    {
-        JsonObject network = networks.add<JsonObject>();
-        network["ssid"] = scanSsids[i];
-        network["rssi"] = scanRssis[i];
-        network["secure"] = scanSecure[i];
-    }
-
-    String scanResults;
-    serializeJson(doc, scanResults);
-    publishScanResults(scanResults);
+    publishScanResults(wifiScanResults.buildPage(page));
 }
 
 void BleProvisioner::publishScanResults(const String &scanResults)

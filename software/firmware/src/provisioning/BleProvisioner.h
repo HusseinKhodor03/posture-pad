@@ -2,6 +2,7 @@
 #define BLE_PROVISIONER_H
 
 #include "SetupSession.h"
+#include "WifiScanResults.h"
 
 #include <Arduino.h>
 #include <NimBLEDevice.h>
@@ -21,11 +22,9 @@ public:
     const String &getPairingToken() const;
 
 private:
-    static const int MAX_WIFI_SCAN_RESULTS = 15;
-    static const int WIFI_SCAN_PAGE_SIZE = 2;
-
     bool started;
     SetupSession setupSession;
+    WifiScanResults wifiScanResults;
     String pendingSsid;
     String pendingPassword;
     bool connectionRequested;
@@ -37,10 +36,6 @@ private:
     String currentStatus;
     String deviceId;
     String pairingToken;
-    String scanSsids[MAX_WIFI_SCAN_RESULTS];
-    int scanRssis[MAX_WIFI_SCAN_RESULTS];
-    bool scanSecure[MAX_WIFI_SCAN_RESULTS];
-    int scanResultCount;
 
     String buildDeviceId() const;
     String loadPairingToken() const;
