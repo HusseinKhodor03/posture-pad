@@ -10,7 +10,7 @@
 #include "../processing/PostureAnalyzer.h"
 #include "../data/DataFormatter.h"
 #include "../data/JsonSerializer.h"
-#include "../network/BleProvisioner.h"
+#include "../provisioning/BleProvisioner.h"
 #include "../network/NetworkManager.h"
 #include "../network/TcpClient.h"
 
