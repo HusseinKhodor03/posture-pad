@@ -109,7 +109,13 @@ bool NetworkManager::send(const String &data)
     if (!client.connected())
         return false;
 
-    client.println(data);
+    size_t bytesWritten = client.println(data);
+    if (bytesWritten == 0)
+    {
+        client.stop();
+        return false;
+    }
+
     return true;
 }
 
