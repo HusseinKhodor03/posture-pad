@@ -5,9 +5,6 @@ DeviceManager::DeviceManager(const char *serverHost, int serverPort) : networkMa
 
 void DeviceManager::init()
 {
-    Serial.begin(115200);
-    delay(100);
-
     FsrReader::init();
     deviceIdentity.begin();
     bleProvisioner.begin(deviceIdentity);
