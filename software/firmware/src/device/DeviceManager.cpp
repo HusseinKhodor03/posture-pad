@@ -1,12 +1,7 @@
 #include "DeviceManager.h"
 #include "../data/DataConfig.h"
 
-namespace
-{
-    constexpr unsigned long NETWORK_CONNECT_TIMEOUT_MS = 20000;
-}
-
-DeviceManager::DeviceManager(const char *host, int port) : sensorReader(muxController), networkManager(host, port), tcpClient(networkManager.getClient()), lastBlinkTime(0), wifiConnectionStartedAt(0), ledState(false), wifiConnectionPending(false), saveCredentialsOnConnect(false), rollbackCredentialsAvailable(false) {}
+DeviceManager::DeviceManager(const char *host, int port) : sensorReader(muxController), networkManager(host, port), tcpClient(networkManager.getClient()), lastBlinkTime(0), ledState(false) {}
 
 void DeviceManager::init()
 {
@@ -19,66 +14,24 @@ void DeviceManager::init()
     sensorReader.init();
     deviceIdentity.begin();
     bleProvisioner.begin(deviceIdentity);
-
-    if (networkManager.connectSavedCredentials())
-    {
-        bleProvisioner.setStatus("connecting");
-        wifiConnectionPending = true;
-        wifiConnectionStartedAt = millis();
-    }
+    wifiConnectionWorkflow.beginSavedConnection(bleProvisioner, networkManager);
 
     Serial.println("Posture Pad Initialized!");
 }
 
 void DeviceManager::update()
 {
-    String provisionedSsid;
-    String provisionedPassword;
-
-    if (bleProvisioner.takeConnectionRequest(provisionedSsid, provisionedPassword))
-    {
-        rollbackCredentialsAvailable = networkManager.loadSavedCredentials(rollbackSsid, rollbackPassword);
-        networkManager.connect(provisionedSsid, provisionedPassword);
-        bleProvisioner.setStatus("connecting");
-        wifiConnectionPending = true;
-        wifiConnectionStartedAt = millis();
-        saveCredentialsOnConnect = true;
-    }
+    wifiConnectionWorkflow.handleConnectionRequest(bleProvisioner, networkManager);
 
     if (bleProvisioner.takeScanRequest())
     {
         bleProvisioner.scanWifiNetworks();
     }
 
-    if (bleProvisioner.takeForgetRequest())
-    {
-        networkManager.forgetCredentials();
-        bleProvisioner.setStatus("unconfigured");
-        wifiConnectionPending = false;
-        saveCredentialsOnConnect = false;
-        rollbackCredentialsAvailable = false;
-        rollbackSsid = "";
-        rollbackPassword = "";
-    }
+    wifiConnectionWorkflow.handleForgetRequest(bleProvisioner, networkManager);
 
     networkManager.update();
-    handleNetworkConnectionTimeout();
-
-    if (wifiConnectionPending && networkManager.isWifiConnected())
-    {
-        if (saveCredentialsOnConnect)
-        {
-            networkManager.saveCredentials();
-            saveCredentialsOnConnect = false;
-        }
-
-        bleProvisioner.setStatus("connected", networkManager.getSsid());
-        wifiConnectionPending = false;
-        rollbackCredentialsAvailable = false;
-        rollbackSsid = "";
-        rollbackPassword = "";
-        Serial.println("Connected to Wi-Fi!");
-    }
+    wifiConnectionWorkflow.updateConnectionState(bleProvisioner, networkManager);
 
     updateLed();
 
@@ -103,32 +56,6 @@ void DeviceManager::update()
 
     String json = jsonSerializer.serialize(deviceIdentity.getDeviceId(), deviceIdentity.getPairingToken(), networkManager.getSsid(), formattedLeftFoot, formattedRightFoot, formattedPostureMetrics, postureAnalysis);
     tcpClient.send(json);
-}
-
-void DeviceManager::handleNetworkConnectionTimeout()
-{
-    if (!wifiConnectionPending || !saveCredentialsOnConnect)
-        return;
-
-    if (millis() - wifiConnectionStartedAt < NETWORK_CONNECT_TIMEOUT_MS)
-        return;
-
-    saveCredentialsOnConnect = false;
-
-    if (rollbackCredentialsAvailable)
-    {
-        networkManager.connect(rollbackSsid, rollbackPassword);
-        bleProvisioner.setStatus("connecting");
-        wifiConnectionStartedAt = millis();
-        rollbackCredentialsAvailable = false;
-        rollbackSsid = "";
-        rollbackPassword = "";
-        return;
-    }
-
-    networkManager.stopConnection();
-    bleProvisioner.setStatus("unconfigured");
-    wifiConnectionPending = false;
 }
 
 void DeviceManager::updateLed()

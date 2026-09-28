@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "DeviceIdentity.h"
+#include "WifiConnectionWorkflow.h"
 #include "../data/RawDataTypes.h"
 #include "../data/FormattedDataTypes.h"
 #include "../sensors/SensorReader.h"
@@ -31,6 +32,7 @@ private:
     DataFormatter dataFormatter;
     JsonSerializer jsonSerializer;
     DeviceIdentity deviceIdentity;
+    WifiConnectionWorkflow wifiConnectionWorkflow;
     BleProvisioner bleProvisioner;
     NetworkManager networkManager;
     TcpClient tcpClient;
@@ -45,16 +47,9 @@ private:
     FormattedPostureMetrics formattedPostureMetrics;
 
     unsigned long lastBlinkTime;
-    unsigned long wifiConnectionStartedAt;
     bool ledState;
-    bool wifiConnectionPending;
-    bool saveCredentialsOnConnect;
-    bool rollbackCredentialsAvailable;
-    String rollbackSsid;
-    String rollbackPassword;
 
     void updateLed();
-    void handleNetworkConnectionTimeout();
 };
 
 #endif
