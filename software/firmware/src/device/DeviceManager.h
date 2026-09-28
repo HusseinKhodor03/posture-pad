@@ -2,6 +2,7 @@
 #define DEVICE_MANAGER_H
 
 #include <Arduino.h>
+#include "DeviceIdentity.h"
 #include "../data/RawDataTypes.h"
 #include "../data/FormattedDataTypes.h"
 #include "../sensors/SensorReader.h"
@@ -29,6 +30,7 @@ private:
     PostureAnalyzer postureAnalyzer;
     DataFormatter dataFormatter;
     JsonSerializer jsonSerializer;
+    DeviceIdentity deviceIdentity;
     BleProvisioner bleProvisioner;
     NetworkManager networkManager;
     TcpClient tcpClient;

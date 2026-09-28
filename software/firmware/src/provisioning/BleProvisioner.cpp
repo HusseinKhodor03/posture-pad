@@ -1,9 +1,8 @@
 #include "BleProvisioner.h"
 #include "ProvisioningProtocol.h"
+#include "../device/DeviceIdentity.h"
 
-#include <Preferences.h>
 #include <WiFi.h>
-#include <esp_system.h>
 
 namespace
 {
@@ -16,20 +15,16 @@ namespace
     const char *WIFI_SCAN_RESULTS_UUID = "7f9c0b60-9f79-46f6-8e2e-4f9c7d2c7c6d";
     const char *PAIRING_TOKEN_UUID = "8be0ef6e-118a-4bd3-90b7-83bcaea35b7f";
     const char *SETUP_SESSION_UUID = "0ad025b5-07ca-49a8-b3f7-03865f5f924f";
-    const char *PREFERENCES_NAMESPACE = "posture-pad";
-    const char *PAIRING_TOKEN_KEY = "pairing_token";
 }
 
 BleProvisioner::BleProvisioner() : started(false), connectionRequested(false), scanRequested(false), forgetRequested(false), statusCharacteristic(nullptr), scanResultsCharacteristic(nullptr), setupSessionCharacteristic(nullptr) {}
 
-void BleProvisioner::begin()
+void BleProvisioner::begin(const DeviceIdentity &identity)
 {
     if (started)
         return;
 
-    deviceId = buildDeviceId();
-    pairingToken = loadPairingToken();
-    String deviceName = "PosturePad-" + deviceId.substring(6);
+    String deviceName = "PosturePad-" + identity.getDeviceId().substring(6);
 
     NimBLEDevice::init(deviceName.c_str());
 
@@ -51,8 +46,8 @@ void BleProvisioner::begin()
     wifiPasswordCharacteristic->setCallbacks(this);
     commandCharacteristic->setCallbacks(this);
 
-    deviceIdCharacteristic->setValue(deviceId.c_str());
-    pairingTokenCharacteristic->setValue(pairingToken.c_str());
+    deviceIdCharacteristic->setValue(identity.getDeviceId().c_str());
+    pairingTokenCharacteristic->setValue(identity.getPairingToken().c_str());
     statusCharacteristic->setValue(ProvisioningProtocol::STATUS_UNCONFIGURED);
     scanResultsCharacteristic->setValue(ProvisioningProtocol::SCAN_RESULTS_IDLE);
     setupSessionCharacteristic->setValue(ProvisioningProtocol::SETUP_SESSION_AVAILABLE);
@@ -242,16 +237,6 @@ void BleProvisioner::setStatus(const String &status, const String &wifiSsid)
     statusCharacteristic->notify();
 }
 
-const String &BleProvisioner::getDeviceId() const
-{
-    return deviceId;
-}
-
-const String &BleProvisioner::getPairingToken() const
-{
-    return pairingToken;
-}
-
 void BleProvisioner::publishScanPage(int page)
 {
     recordSetupSessionActivity();
@@ -265,43 +250,6 @@ void BleProvisioner::publishScanResults(const String &scanResults)
 
     scanResultsCharacteristic->setValue(scanResults.c_str());
     scanResultsCharacteristic->notify();
-}
-
-String BleProvisioner::buildDeviceId() const
-{
-    char deviceId[13];
-    snprintf(deviceId, sizeof(deviceId), "%012llX", static_cast<unsigned long long>(ESP.getEfuseMac()));
-    return String(deviceId);
-}
-
-String BleProvisioner::loadPairingToken() const
-{
-    Preferences preferences;
-    preferences.begin(PREFERENCES_NAMESPACE, false);
-
-    String token = preferences.getString(PAIRING_TOKEN_KEY, "");
-
-    if (token.isEmpty())
-    {
-        token = createPairingToken();
-        preferences.putString(PAIRING_TOKEN_KEY, token);
-    }
-
-    preferences.end();
-    return token;
-}
-
-String BleProvisioner::createPairingToken() const
-{
-    char token[33];
-
-    for (int i = 0; i < 4; i++)
-    {
-        snprintf(token + (i * 8), 9, "%08lX", static_cast<unsigned long>(esp_random()));
-    }
-
-    token[32] = '\0';
-    return String(token);
 }
 
 bool BleProvisioner::expireSetupSessionIfTimedOut()

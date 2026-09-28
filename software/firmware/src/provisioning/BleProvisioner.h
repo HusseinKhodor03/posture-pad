@@ -7,19 +7,19 @@
 #include <Arduino.h>
 #include <NimBLEDevice.h>
 
+class DeviceIdentity;
+
 class BleProvisioner : private NimBLECharacteristicCallbacks, private NimBLEServerCallbacks
 {
 public:
     BleProvisioner();
-    void begin();
+    void begin(const DeviceIdentity &identity);
     bool takeConnectionRequest(String &ssid, String &password);
     bool takeScanRequest();
     bool takeForgetRequest();
     void scanWifiNetworks();
     void setStatus(const String &status);
     void setStatus(const String &status, const String &wifiSsid);
-    const String &getDeviceId() const;
-    const String &getPairingToken() const;
 
 private:
     bool started;
@@ -34,12 +34,7 @@ private:
     NimBLECharacteristic *scanResultsCharacteristic;
     NimBLECharacteristic *setupSessionCharacteristic;
     String currentStatus;
-    String deviceId;
-    String pairingToken;
 
-    String buildDeviceId() const;
-    String loadPairingToken() const;
-    String createPairingToken() const;
     bool expireSetupSessionIfTimedOut();
     bool setupSessionMatches(const String &sessionId);
     bool pingSetupSession(const String &sessionId);

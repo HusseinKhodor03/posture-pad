@@ -17,7 +17,8 @@ void DeviceManager::init()
     digitalWrite(LED_BUILTIN, LOW);
 
     sensorReader.init();
-    bleProvisioner.begin();
+    deviceIdentity.begin();
+    bleProvisioner.begin(deviceIdentity);
 
     if (networkManager.connectSavedCredentials())
     {
@@ -100,7 +101,7 @@ void DeviceManager::update()
     dataFormatter.formatFootData(rightFoot, formattedRightFoot);
     dataFormatter.formatPostureMetrics(postureMetrics, formattedPostureMetrics);
 
-    String json = jsonSerializer.serialize(bleProvisioner.getDeviceId(), bleProvisioner.getPairingToken(), networkManager.getSsid(), formattedLeftFoot, formattedRightFoot, formattedPostureMetrics, postureAnalysis);
+    String json = jsonSerializer.serialize(deviceIdentity.getDeviceId(), deviceIdentity.getPairingToken(), networkManager.getSsid(), formattedLeftFoot, formattedRightFoot, formattedPostureMetrics, postureAnalysis);
     tcpClient.send(json);
 }
 
