@@ -12,8 +12,6 @@ void DeviceManager::init()
     deviceIdentity.begin();
     bleProvisioner.begin(deviceIdentity);
     wifiConnectionWorkflow.beginSavedConnection(bleProvisioner, networkManager);
-
-    Serial.println("Posture Pad Initialized!");
 }
 
 void DeviceManager::update()

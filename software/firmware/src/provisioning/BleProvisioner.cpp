@@ -60,7 +60,6 @@ void BleProvisioner::begin(const DeviceIdentity &identity)
     advertising->start();
 
     started = true;
-    Serial.printf("BLE device available as %s\n", deviceName.c_str());
 }
 
 void BleProvisioner::onConnect(NimBLEServer *server, NimBLEConnInfo &)
@@ -81,12 +80,10 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
     if (uuid == NimBLEUUID(WIFI_SSID_UUID))
     {
         pendingSsid = value.c_str();
-        Serial.printf("Stored Wi-Fi SSID: %s\n", pendingSsid.c_str());
     }
     else if (uuid == NimBLEUUID(WIFI_PASSWORD_UUID))
     {
         pendingPassword = value.c_str();
-        Serial.printf("Stored Wi-Fi password (%u bytes)\n", static_cast<unsigned int>(value.length()));
     }
     else if (uuid == NimBLEUUID(COMMAND_UUID))
     {
@@ -117,7 +114,6 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
         {
             recordSetupSessionActivity();
             scanRequested = true;
-            Serial.println("Wi-Fi scan requested");
         }
         else if (ProvisioningProtocol::parseScanPageCommand(command, scanPageSession, scanPage) && setupSessionMatches(scanPageSession))
         {
@@ -127,11 +123,6 @@ void BleProvisioner::onWrite(NimBLECharacteristic *characteristic, NimBLEConnInf
         else if (!connectSession.isEmpty() && setupSessionMatches(connectSession) && !pendingSsid.isEmpty())
         {
             connectionRequested = true;
-            Serial.println("Wi-Fi connection requested");
-        }
-        else if (!connectSession.isEmpty() && setupSessionMatches(connectSession))
-        {
-            Serial.println("Ignored connect command: no Wi-Fi SSID received");
         }
         else if (!forgetSession.isEmpty() && setupSessionMatches(forgetSession))
         {

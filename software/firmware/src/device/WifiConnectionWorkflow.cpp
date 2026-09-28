@@ -92,7 +92,6 @@ void WifiConnectionWorkflow::handleSuccessfulConnection(BleProvisioner &bleProvi
     wifiConnectionPending = false;
     rollbackCredentialsAvailable = false;
     clearRollbackCredentials();
-    Serial.println("Connected to Wi-Fi!");
 }
 
 void WifiConnectionWorkflow::clearRollbackCredentials()

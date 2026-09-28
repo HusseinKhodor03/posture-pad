@@ -24,7 +24,6 @@ void NetworkManager::connect(const String &newSsid, const String &newPassword)
     lastTcpAttempt = 0;
 
     WiFi.begin(ssid.c_str(), password.c_str());
-    Serial.printf("Connecting to Wi-Fi network: %s\n", ssid.c_str());
 }
 
 bool NetworkManager::connectSavedCredentials()
@@ -52,7 +51,6 @@ bool NetworkManager::loadSavedCredentials(String &savedSsid, String &savedPasswo
 
     if (savedSsid.isEmpty())
     {
-        Serial.println("No saved Wi-Fi credentials");
         return false;
     }
 
@@ -65,15 +63,12 @@ void NetworkManager::saveCredentials()
 
     if (!preferences.begin(PREFERENCES_NAMESPACE, false))
     {
-        Serial.println("Could not open Wi-Fi credential storage");
         return;
     }
 
     preferences.putString(WIFI_SSID_KEY, ssid);
     preferences.putString(WIFI_PASSWORD_KEY, password);
     preferences.end();
-
-    Serial.println("Saved Wi-Fi credentials");
 }
 
 void NetworkManager::stopConnection()
@@ -95,15 +90,12 @@ void NetworkManager::forgetCredentials()
 
     if (!preferences.begin(PREFERENCES_NAMESPACE, false))
     {
-        Serial.println("Could not open Wi-Fi credential storage");
         return;
     }
 
     preferences.remove(WIFI_SSID_KEY);
     preferences.remove(WIFI_PASSWORD_KEY);
     preferences.end();
-
-    Serial.println("Forgot Wi-Fi credentials");
 }
 
 void NetworkManager::update()
