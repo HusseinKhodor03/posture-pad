@@ -1,10 +1,13 @@
 #include <Arduino.h>
 #include "device/DeviceManager.h"
 
-const char *host = "tokaido.proxy.rlwy.net";
-const int port = 45762;
+namespace
+{
+  constexpr const char *SERVER_HOST = "tokaido.proxy.rlwy.net";
+  constexpr int SERVER_PORT = 45762;
 
-DeviceManager deviceManager(host, port);
+  DeviceManager deviceManager(SERVER_HOST, SERVER_PORT);
+}
 
 void setup()
 {

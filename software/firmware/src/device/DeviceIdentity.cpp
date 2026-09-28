@@ -5,8 +5,8 @@
 
 namespace
 {
-    const char *PREFERENCES_NAMESPACE = "posture-pad";
-    const char *PAIRING_TOKEN_KEY = "pairing_token";
+    constexpr const char *PREFERENCES_NAMESPACE = "posture-pad";
+    constexpr const char *PAIRING_TOKEN_KEY = "pairing_token";
 }
 
 void DeviceIdentity::begin()
