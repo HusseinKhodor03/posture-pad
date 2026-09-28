@@ -88,8 +88,7 @@ export class DeviceSetupController {
     try {
       const device = await this.requestBluetoothDevice();
       await this.connectSelectedDevice(device);
-    } catch (error) {
-      console.error("Bluetooth connection failed:", error);
+    } catch {
       await this.releaseSetupSession();
       this.setupSession.clearLocal();
       this.controlsView.showConnectionFailed();
@@ -106,8 +105,8 @@ export class DeviceSetupController {
       if (this.bleTransport.isConnected()) {
         this.bleTransport.disconnect();
       }
-    } catch (error) {
-      console.error("Could not disconnect Posture Pad:", error);
+    } catch {
+      // Switching devices is best-effort; reload still resets the setup flow
     } finally {
       this.reloadConfigurationPage();
     }
@@ -144,18 +143,12 @@ export class DeviceSetupController {
 
     const pairingToken = await this.bleTransport.readText("pairingToken");
 
-    await this.bleTransport.subscribeText(
-      "status",
-      (status) => {
-        this.wifiSetupController.handleWifiStatus(status);
-      },
-    );
-    await this.bleTransport.subscribeText(
-      "scanResults",
-      (scanResults) => {
-        this.wifiSetupController.handleScanResults(scanResults);
-      },
-    );
+    await this.bleTransport.subscribeText("status", (status) => {
+      this.wifiSetupController.handleWifiStatus(status);
+    });
+    await this.bleTransport.subscribeText("scanResults", (scanResults) => {
+      this.wifiSetupController.handleScanResults(scanResults);
+    });
 
     this.onDeviceConnected(deviceId, pairingToken);
 

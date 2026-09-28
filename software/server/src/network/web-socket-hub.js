@@ -14,8 +14,8 @@ export class WebSocketHub {
       ws.requestedDeviceId = null;
       ws.authToken = "";
 
-      ws.on("error", (error) => {
-        console.error(error);
+      ws.on("error", () => {
+        // Keep WebSocket errors from terminating the server
       });
 
       ws.on("message", (data) => {
@@ -44,8 +44,8 @@ export class WebSocketHub {
       ws.authToken =
         typeof message.auth_token === "string" ? message.auth_token : "";
       this.authorizeSubscription(ws);
-    } catch (error) {
-      console.error("Invalid WebSocket message:", error);
+    } catch {
+      // Ignore malformed WebSocket messages
     }
   }
 
@@ -86,7 +86,6 @@ export class WebSocketHub {
 
     ws.subscribedDeviceId = ws.requestedDeviceId;
     this.sendAuthorizationStatus(ws, ws.subscribedDeviceId, "authorized");
-    console.log(`Dashboard subscribed to device ${ws.subscribedDeviceId}`);
     this.sendDeviceStatus(ws, ws.subscribedDeviceId);
   }
 

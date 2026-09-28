@@ -27,9 +27,6 @@ export class SetupSession {
     const expectedStatus = buildClaimedSetupSessionStatus(this.sessionId);
 
     if (sessionStatus !== expectedStatus) {
-      console.warn(
-        `Posture Pad ${deviceId} setup session rejected: ${sessionStatus}`,
-      );
       this.clearLocal();
       return false;
     }
@@ -101,8 +98,8 @@ export class SetupSession {
         "command",
         buildPingCommand(this.sessionId),
       );
-    } catch (error) {
-      console.error("Could not refresh BLE setup session:", error);
+    } catch {
+      // The BLE link may already be gone or the setup session may have expired
     }
   }
 

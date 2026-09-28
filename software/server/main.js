@@ -29,9 +29,7 @@ function main() {
   const webSocketHub = new WebSocketHub(httpServer);
   webSocketHub.init();
 
-  httpServer.listen(HTTP_PORT, "0.0.0.0", () => {
-    console.log(`HTTP and WebSocket server listening on port ${HTTP_PORT}`);
-  });
+  httpServer.listen(HTTP_PORT, "0.0.0.0");
 
   const tcpSensorServer = new TcpSensorServer({
     port: TCP_PORT,

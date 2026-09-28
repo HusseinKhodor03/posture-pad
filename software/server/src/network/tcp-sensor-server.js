@@ -22,14 +22,10 @@ export class TcpSensorServer {
   }
 
   listen() {
-    this.server.listen(this.port, "0.0.0.0", () => {
-      console.log(`TCP server listening on port ${this.port}`);
-    });
+    this.server.listen(this.port, "0.0.0.0");
   }
 
   handleConnection(socket) {
-    console.log("ESP32 connected!");
-
     let buffer = "";
 
     socket.on("data", (chunk) => {
@@ -47,10 +43,11 @@ export class TcpSensorServer {
     });
 
     socket.on("close", () => {
-      console.log("ESP32 disconnected");
       this.handleDisconnection(socket);
     });
-    socket.on("error", (err) => console.error("TCP socket error:", err));
+    socket.on("error", () => {
+      // Keep socket errors from terminating the server
+    });
   }
 
   handleLine(line, socket) {
@@ -75,8 +72,8 @@ export class TcpSensorServer {
         delete sensorData.auth_token;
         this.onSensorData(deviceId, JSON.stringify(sensorData));
       }
-    } catch (error) {
-      console.error("Invalid sensor data:", error);
+    } catch {
+      // Ignore malformed sensor payloads
     }
   }
 
@@ -120,7 +117,6 @@ export class TcpSensorServer {
       return;
     }
 
-    console.log(`ESP32 stream inactive for device ${deviceId}`);
     this.activeSocketsByDeviceId.delete(deviceId);
     this.clearInactivityTimer(deviceId);
     this.onDeviceStatus(deviceId, "offline");

@@ -64,8 +64,7 @@ export class WifiSetupController {
         "command",
         buildScanCommand(this.setupSession.getSessionId()),
       );
-    } catch (error) {
-      console.error("Could not start Wi-Fi scan:", error);
+    } catch {
       this.networkListView.showMessage("Could not scan Wi-Fi networks.");
       this.setWifiScanState(false);
     }
@@ -77,8 +76,7 @@ export class WifiSetupController {
         "command",
         buildScanPageCommand(this.setupSession.getSessionId(), page),
       );
-    } catch (error) {
-      console.error("Could not request Wi-Fi scan page:", error);
+    } catch {
       this.networkListView.showMessage(
         "Could not read Wi-Fi scan results.",
       );
@@ -129,12 +127,11 @@ export class WifiSetupController {
           "Wi-Fi credentials sent to the Posture Pad.",
         );
       }
-    } catch (error) {
+    } catch {
       this.showWifiConnectionError(
         ssid,
         `Could not send Wi-Fi credentials for "${ssid}".`,
       );
-      console.error("Could not send Wi-Fi credentials:", error);
       this.controlsView.showMessage("Could not send the Wi-Fi credentials.");
     }
   }
@@ -158,8 +155,7 @@ export class WifiSetupController {
         "command",
         buildForgetCommand(this.setupSession.getSessionId()),
       );
-    } catch (error) {
-      console.error("Could not forget Wi-Fi network:", error);
+    } catch {
       this.stopWifiForgetTimeout();
       this.controlsView.showMessage("Could not forget the Wi-Fi network.");
       this.isForgettingWifi = false;
@@ -194,8 +190,7 @@ export class WifiSetupController {
 
     try {
       scanResults = parseScanResults(scanResultText);
-    } catch (error) {
-      console.error("Could not read Wi-Fi scan results:", error);
+    } catch {
       this.networkListView.showMessage("Could not read Wi-Fi scan results.");
       this.setWifiScanState(false);
       return;
